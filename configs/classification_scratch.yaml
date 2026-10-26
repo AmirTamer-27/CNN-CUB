@@ -1,0 +1,12 @@
+# Your current notebook baseline; accuracy and recall are reported as percentages.
+run_name: scratch_baseline
+model: bird_cnn
+num_classes: 200
+train_dataset: Multimodal-Fatima/CUB_train
+validation_fraction: 0.20
+seed: 42
+image_size: 224
+batch_size: 32
+epochs: 20
+optimizer: adam
+learning_rate: 0.001

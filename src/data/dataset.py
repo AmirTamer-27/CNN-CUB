@@ -1,0 +1,37 @@
+"""Load the training source and create a repeatable validation split."""
+import torch
+from torch.utils.data import DataLoader
+from src.data.transforms import prepare_images
+
+
+def make_loaders(config):
+    # Import here so loading CLI help never downloads or loads the dataset.
+    from datasets import load_dataset
+
+    full_train = load_dataset(config["train_dataset"], split="train")
+    split = full_train.train_test_split(
+        test_size=config["validation_fraction"],
+        stratify_by_column="label",
+        seed=config["seed"],
+    )
+    def prepare(batch):
+        return prepare_images(batch, image_size=config["image_size"])
+
+    train = split["train"].with_transform(prepare)
+    validation = split["test"].with_transform(prepare)
+    generator = torch.Generator().manual_seed(config["seed"])
+    train_loader = DataLoader(
+        train, 
+        batch_size=config["batch_size"], 
+        shuffle=True,
+        num_workers=0, 
+        generator=generator,
+    )
+    validation_loader = DataLoader(
+        validation, 
+        batch_size=config["batch_size"],
+        shuffle=False, 
+        num_workers=0,
+    )
+    class_names = full_train.features["label"].names
+    return train_loader, validation_loader, class_names

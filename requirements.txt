@@ -1,0 +1,12 @@
+# Starter dependencies; pin versions after validating the team environment.
+torch
+torchvision
+datasets
+numpy
+pandas
+scikit-learn
+matplotlib
+Pillow
+PyYAML
+tqdm
+mlflow
