@@ -62,7 +62,7 @@ class BirdCNN(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten(start_dim=1)
         self.dropout = nn.Dropout(p=dropout)
-        self.fc = nn.Linear(in_features=512, out_features=num_classes)
+        self.fc = nn.Linear(in_features=4608, out_features=num_classes)
 
 
     def forward(self, images):
