@@ -72,7 +72,7 @@ class BirdCNN(nn.Module):
         x = self.block4(x)
         x = self.block5(x)
         x = self.block6(x)
-        x = self.global_pool(x)
+        # x = self.global_pool(x)
         x = self.dropout(x)
         x = self.flatten(x)
         return self.fc(x)
