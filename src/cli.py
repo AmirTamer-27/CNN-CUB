@@ -47,7 +47,7 @@ def main():
     # 5. Configure MLflow and start one run for this training attempt.
     print(f"Device: {device}")
     mlflow.set_tracking_uri(
-        "https://dagshub.com/AmirTamer-27/CNN_CUD.mlflow"
+        "https://dagshub.com/AmirTamer-27/CNN-CUD.mlflow"
     )
     mlflow.set_experiment("bird-classification")
 
