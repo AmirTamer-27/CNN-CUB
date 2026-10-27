@@ -3,8 +3,8 @@
 CSE 485 / CSE 488 Deep Learning final project.
 
 The scratch classifier from the Kaggle notebook is organized into Python modules.
-Transfer learning, tuning, Grad-CAM, colorization, captioning, and MLflow integration
-remain to be implemented. The project brief is in the parent folder.
+Transfer learning, tuning, Grad-CAM, colorization, and captioning remain to be
+implemented. MLflow logging is connected in the CLI. The project brief is in the parent folder.
 
 ## Where code goes
 
@@ -57,15 +57,19 @@ The CLI uses one PyTorch seed and explicit device selection. Automatic Git metad
 recording and the unused `--task` option have been removed for simplicity.
 
 The refactor also honors `num_classes` in the final layer and exposes
-`forward_features` for later encoder reuse. No augmentation or input standardization
-has been added. Resizing uses the original RGB/LANCZOS/gray-padding function.
+`forward_features` for later encoder reuse. Training-only horizontal flipping and contrast changes are available through
+`horizontal_flip_probability` and `contrast_change_probability`. The baseline uses
+0.0 for both, and validation always disables both. `contrast_strength` controls
+the range of contrast factors.
+No input standardization has been added. Resizing uses the original RGB/LANCZOS/gray-padding function.
 
 ## Experiment results
 
 Metrics are printed and returned by `fit` as an in-memory history list. The CLI
-currently does not capture that return value. No output folder, copied configuration,
+captures that history and uploads it to MLflow after training. No output folder, copied configuration,
 JSON result files, or checkpoints are created by the training code.
-MLflow logging and saving trained weights are not connected yet.
+MLflow records parameters and uploads epoch metrics after training finishes.
+Saving trained weights is not implemented.
 
 Accuracy and recall are percentages. The test set is reserved for final evaluation;
 a test command is not yet implemented. A fixed seed helps repeat comparisons but
@@ -86,4 +90,27 @@ Git preserves earlier code. Do not copy the whole project for every experiment.
 
 Record hypotheses, results, and failures in the report. Select experiments with
 validation metrics rather than training accuracy or repeated test-set checks.
-MLflow can later log the configuration and epoch metrics; it is not connected yet.
+MLflow logs the selected configuration settings, including augmentation parameters,
+and epoch metrics to the configured DagsHub server. Supply credentials through
+`MLFLOW_TRACKING_USERNAME` and `MLFLOW_TRACKING_PASSWORD`, outside the repository.
+
+## First augmentation experiment
+
+```bash
+python -m src.cli train --config configs/classification_scratch_augmented.yaml
+```
+
+This keeps the baseline's model, split, resolution, batch size, learning rate, and
+20 epochs. After resizing and padding, each training image independently has a
+50% chance of horizontal flipping and a 50% chance of contrast adjustment.
+Contrast strength 0.2 samples a factor between 0.8 and 1.2 when adjustment occurs.
+Neither, either, or both transformations can happen. One input image still yields
+one tensor with the same label; the dataset size is unchanged. Validation uses
+only resizing, padding, and tensor conversion.
+
+MLflow logs both probabilities and contrast strength under run name
+`scratch_baseline_augmented`. Metrics are uploaded after `fit` returns, not live.
+Compare validation performance with the baseline; lower training accuracy under
+augmentation alone does not mean the experiment failed. Preview transformed
+training images before a full run; these probabilities and strength are starting
+choices, not optimized settings.

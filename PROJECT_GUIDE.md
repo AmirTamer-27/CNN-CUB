@@ -34,12 +34,19 @@ The same command can run on Kaggle after cloning the repository.
    - `validate`: measures performance without updating weights or BatchNorm statistics.
    - Records metrics in memory and prints progress.
 5. **During data loading:** `with_transform` calls the preparation function in `transforms.py` when samples are requested. The DataLoader stacks their tensors into batches.
-6. **After training:** `fit` returns the metric history. The CLI currently does not capture that return value.
+6. **After training:** `fit` returns the metric history, and the CLI uploads each epoch's metrics to the MLflow run.
 
-The official test dataset is not loaded during training. No result files or model checkpoints are saved, and MLflow logging is not connected yet.
+The official test dataset is not loaded during training. No result files or model checkpoints are saved. The CLI logs settings and metric history to DagsHub through MLflow; credentials come from the environment.
 
 ## Trying another experiment
 
 - **Different settings:** copy the YAML file, change the setting you want to investigate, and run the command with that file's path. Each invocation starts fresh weights.
 - **Different architecture:** edit the CNN or add another model file, then update model selection in `cli.py`. Changing the model name in YAML alone does not implement it.
 - **Comparing results:** keep the data split fixed and compare validation metrics. Commit code changes so each experiment can be tied to its code version.
+
+## Augmentation experiment
+
+Run with `--config configs/classification_scratch_augmented.yaml` for independent
+50% horizontal-flip and 50% contrast-change probabilities on each training image,
+after resizing/padding. Contrast strength 0.2 uses factors between 0.8 and 1.2.
+Validation remains unaugmented. The baseline config disables both operations.

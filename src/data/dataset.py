@@ -14,11 +14,20 @@ def make_loaders(config):
         stratify_by_column="label",
         seed=config["seed"],
     )
-    def prepare(batch):
+    def prepare_train(batch):
+        return prepare_images(
+            batch,
+            image_size=config["image_size"],
+            flip_probability=config.get("horizontal_flip_probability", 0.0),
+            contrast_probability=config.get("contrast_change_probability", 0.0),
+            contrast_strength=config.get("contrast_strength", 0.2),
+        )
+
+    def prepare_validation(batch):
         return prepare_images(batch, image_size=config["image_size"])
 
-    train = split["train"].with_transform(prepare)
-    validation = split["test"].with_transform(prepare)
+    train = split["train"].with_transform(prepare_train)
+    validation = split["test"].with_transform(prepare_validation)
     generator = torch.Generator().manual_seed(config["seed"])
     train_loader = DataLoader(
         train, 

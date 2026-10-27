@@ -55,6 +55,9 @@ def main():
         mlflow.log_params({
             "model": config["model"],
             "image_size": config["image_size"],
+            "horizontal_flip_probability": config.get("horizontal_flip_probability", 0.0),
+            "contrast_change_probability": config.get("contrast_change_probability", 0.0),
+            "contrast_strength": config.get("contrast_strength", 0.2),
             "batch_size": config["batch_size"],
             "epochs": config["epochs"],
             "optimizer": config["optimizer"],

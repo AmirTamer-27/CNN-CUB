@@ -14,13 +14,37 @@ def resize_and_pad(image, size=320):
     )
 
 
-def prepare_images(batch, image_size=224):
-    """Resize and pad a batch of images, then convert them to tensors."""
+def prepare_images(
+    batch,
+    image_size=224,
+    flip_probability=0.0,
+    contrast_probability=0.0,
+    contrast_strength=0.2,
+):
+    """Resize/pad, independently augment each image, then convert to tensors."""
+    horizontal_flip = transforms.RandomHorizontalFlip(
+        p=flip_probability
+    )
+
+    random_contrast = transforms.RandomApply(
+        [transforms.ColorJitter(contrast=contrast_strength)],
+        p=contrast_probability,
+    )
+
     to_tensor = transforms.ToTensor()
+    prepared_images = []
+
+    for image in batch["image"]:
+        image = resize_and_pad(image, size=image_size)
+
+        # Each operation makes its own random decision for this image.
+        image = horizontal_flip(image)
+        image = random_contrast(image)
+
+        image = to_tensor(image)
+        prepared_images.append(image)
+
     return {
-        "image": [
-            to_tensor(resize_and_pad(image, size=image_size))
-            for image in batch["image"]
-        ],
+        "image": prepared_images,
         "label": batch["label"],
     }

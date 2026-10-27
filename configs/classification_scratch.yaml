@@ -10,3 +10,6 @@ batch_size: 32
 epochs: 20
 optimizer: adam
 learning_rate: 0.001
+horizontal_flip_probability: 0.0
+contrast_change_probability: 0.0
+contrast_strength: 0.2
