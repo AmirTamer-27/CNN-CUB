@@ -1,6 +1,6 @@
 
 # Same baseline settings, with independent training-only flip and contrast augmentation.
-run_name: scratch_baseline_a_d_reg
+run_name: scratch_baseline_a_d_reg_40
 model: bird_cnn
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
@@ -8,7 +8,7 @@ validation_fraction: 0.20
 seed: 42
 image_size: 224
 batch_size: 32
-epochs: 30
+epochs: 40
 optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
