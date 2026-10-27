@@ -8,7 +8,7 @@ validation_fraction: 0.20
 seed: 42
 image_size: 224
 batch_size: 32
-epochs: 20
+epochs: 30
 optimizer: adam
 learning_rate: 0.001
 horizontal_flip_probability: 0.5
