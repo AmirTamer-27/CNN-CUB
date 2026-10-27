@@ -10,7 +10,7 @@ batch_size: 32
 epochs: 40
 optimizer: adam
 dropout: 0.3
-learning_rate: 0.01
+learning_rate: 0.001
 weight_decay: 0.00001
 horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
