@@ -40,7 +40,9 @@ def main():
         raise ValueError("num_classes must match the number of dataset classes.")
 
     # 4. Create a fresh model, loss function, and optimizer.
-    model = BirdCNN(num_classes=config["num_classes"]).to(device)
+    model = BirdCNN(
+        num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
+    ).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
@@ -54,6 +56,7 @@ def main():
     with mlflow.start_run(run_name=config["run_name"]):
         mlflow.log_params({
             "model": config["model"],
+            "dropout": config.get("dropout", 0.0),
             "image_size": config["image_size"],
             "horizontal_flip_probability": config.get("horizontal_flip_probability", 0.0),
             "contrast_change_probability": config.get("contrast_change_probability", 0.0),

@@ -9,6 +9,7 @@ image_size: 224
 batch_size: 32
 epochs: 20
 optimizer: adam
+dropout: 0.0
 learning_rate: 0.001
 horizontal_flip_probability: 0.0
 contrast_change_probability: 0.0
