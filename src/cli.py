@@ -44,7 +44,11 @@ def main():
         num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
     ).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config["learning_rate"],
+        weight_decay=config.get("weight_decay", 0.0),
+    )
 
     # 5. Configure MLflow and start one run for this training attempt.
     print(f"Device: {device}")
@@ -65,6 +69,7 @@ def main():
             "epochs": config["epochs"],
             "optimizer": config["optimizer"],
             "learning_rate": config["learning_rate"],
+            "weight_decay": config.get("weight_decay", 0.0),
             "seed": config["seed"],
             "validation_fraction": config["validation_fraction"],
             "train_dataset": config["train_dataset"],
