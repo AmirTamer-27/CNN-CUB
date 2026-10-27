@@ -4,7 +4,7 @@ import argparse
 import torch
 from torch import nn
 import yaml
-
+import mlflow
 from src.data.dataset import make_loaders
 from src.models.bird_cnn import BirdCNN
 from src.training.trainer import fit
@@ -44,9 +44,44 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
-    # 5. Start training.
+    # 5. Configure MLflow and start one run for this training attempt.
     print(f"Device: {device}")
-    fit(model, train_loader, validation_loader, criterion, optimizer, device, config)
+    mlflow.set_tracking_uri(
+        "https://dagshub.com/AmirTamer-27/CNN_CUD.mlflow"
+    )
+    mlflow.set_experiment("bird-classification")
+
+    with mlflow.start_run(run_name=config["run_name"]):
+        mlflow.log_params({
+            "model": config["model"],
+            "image_size": config["image_size"],
+            "batch_size": config["batch_size"],
+            "epochs": config["epochs"],
+            "optimizer": config["optimizer"],
+            "learning_rate": config["learning_rate"],
+            "seed": config["seed"],
+            "validation_fraction": config["validation_fraction"],
+            "train_dataset": config["train_dataset"],
+        })
+
+        history = fit(
+            model, train_loader, validation_loader,
+            criterion, optimizer, device, config,
+        )
+
+        # Upload the per-epoch history after training finishes.
+        for result in history:
+            mlflow.log_metrics(
+                {
+                    "train_loss": result["train"]["loss"],
+                    "train_accuracy": result["train"]["accuracy"],
+                    "train_macro_recall": result["train"]["macro_recall"],
+                    "val_loss": result["validation"]["loss"],
+                    "val_accuracy": result["validation"]["accuracy"],
+                    "val_macro_recall": result["validation"]["macro_recall"],
+                },
+                step=result["epoch"],
+            )
 
 
 if __name__ == "__main__":
