@@ -7,11 +7,11 @@ validation_fraction: 0.2
 seed: 42
 image_size: 224
 batch_size: 32
-epochs: 40
+epochs: 50
 optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
-weight_decay: 0.00001
+weight_decay: 0.0001
 horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
 contrast_strength: 0.2
