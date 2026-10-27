@@ -24,14 +24,14 @@ def make_loaders(config):
         train, 
         batch_size=config["batch_size"], 
         shuffle=True,
-        num_workers=0, 
+        num_workers=2, 
         generator=generator,
     )
     validation_loader = DataLoader(
         validation, 
         batch_size=config["batch_size"],
         shuffle=False, 
-        num_workers=0,
+        num_workers=2,
     )
     class_names = full_train.features["label"].names
     return train_loader, validation_loader, class_names
