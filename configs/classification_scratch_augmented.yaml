@@ -1,6 +1,6 @@
 
 # Same baseline settings, with independent training-only flip and contrast augmentation.
-run_name: scratch_baseline_augmented_dropout
+run_name: scratch_baseline_a_d_noGAP
 model: bird_cnn
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
