@@ -7,6 +7,7 @@ import yaml
 import mlflow
 from src.data.dataset import make_loaders
 from src.models.bird_cnn import BirdCNN
+from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
 from src.training.trainer import fit
 
 
@@ -22,8 +23,10 @@ def main():
         config = yaml.safe_load(file)
 
     # Only these choices have been implemented so far.
-    if config["model"] != "bird_cnn" or config["optimizer"] != "adam":
-        raise ValueError("This version supports model: bird_cnn and optimizer: adam.")
+    if config["model"] not in ("bird_cnn", "bird_cnn_delayed_pooling"):
+        raise ValueError("Choose model: bird_cnn or bird_cnn_delayed_pooling.")
+    if config["optimizer"] != "adam":
+        raise ValueError("This version supports optimizer: adam.")
 
     # 2. Set the PyTorch seed and select the device.
     torch.manual_seed(config["seed"])
@@ -40,7 +43,11 @@ def main():
         raise ValueError("num_classes must match the number of dataset classes.")
 
     # 4. Create a fresh model, loss function, and optimizer.
-    model = BirdCNN(
+    if config["model"] == "bird_cnn":
+        model_class = BirdCNN
+    else:
+        model_class = BirdCNNDelayedPooling
+    model = model_class(
         num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
     ).to(device)
     criterion = nn.CrossEntropyLoss()

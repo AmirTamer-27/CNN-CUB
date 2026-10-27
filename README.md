@@ -77,6 +77,21 @@ does not guarantee identical results across GPU environments.
 
 ## Trying another experiment
 
+For delayed early downsampling, run:
+
+```bash
+python -m src.cli train --config configs/classification_scratch_delayed_pooling.yaml
+```
+
+`BirdCNNDelayedPooling` in `src/models/bird_cnn_delayed_pooling.py` keeps the
+baseline's six convolution blocks, but changes the first max-pooling stride from
+2 to 1. At input size 224, block output sizes are 223, 111, 55, 27, 13, and 6,
+instead of 112, 56, 28, 14, 7, and 3. Global average pooling still produces 512
+features. The parameter count is unchanged, but larger maps increase computation
+and memory use. Its separate config matches the regularized 40-epoch experiment's
+training settings. Compare validation results to test whether delaying early
+downsampling helps; this is a hypothesis, not a guarantee of preserving detail.
+
 For a learning-rate experiment, copy `classification_scratch.yaml` to a new YAML,
 change `run_name` and `learning_rate`, then pass that file to the same command.
 Keep the split, image preparation, and other settings fixed for a controlled comparison.
