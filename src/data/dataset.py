@@ -31,18 +31,23 @@ def make_loaders(config):
     train = split["train"].with_transform(prepare_train)
     validation = split["test"].with_transform(prepare_validation)
     generator = torch.Generator().manual_seed(config["seed"])
+    pin_memory = torch.cuda.is_available()
     train_loader = DataLoader(
         train, 
         batch_size=config["batch_size"], 
         shuffle=True,
-        num_workers=4, 
+        num_workers=2,
+        pin_memory=pin_memory,
+        persistent_workers=True,
         generator=generator,
     )
     validation_loader = DataLoader(
         validation, 
         batch_size=config["batch_size"],
         shuffle=False, 
-        num_workers=4,
+        num_workers=2,
+        pin_memory=pin_memory,
+        persistent_workers=True,
     )
     class_names = full_train.features["label"].names
     return train_loader, validation_loader, class_names

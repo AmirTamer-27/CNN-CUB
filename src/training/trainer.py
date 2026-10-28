@@ -13,8 +13,8 @@ def train_one_epoch(model, loader, criterion, optimizer, device, num_classes):
     all_predictions = []
 
     for batch in tqdm(loader, desc="Training"):
-        images = batch["image"].to(device)
-        labels = batch["label"].to(device)
+        images = batch["image"].to(device, non_blocking=device.type == "cuda")
+        labels = batch["label"].to(device, non_blocking=device.type == "cuda")
 
         optimizer.zero_grad()
         scores = model(images)
@@ -43,8 +43,8 @@ def validate(model, loader, criterion, device, num_classes):
     # Validation measures performance without calculating gradients or updating weights.
     with torch.no_grad():
         for batch in tqdm(loader, desc="Validation"):
-            images = batch["image"].to(device)
-            labels = batch["label"].to(device)
+            images = batch["image"].to(device, non_blocking=device.type == "cuda")
+            labels = batch["label"].to(device, non_blocking=device.type == "cuda")
             scores = model(images)
             loss = criterion(scores, labels)
 

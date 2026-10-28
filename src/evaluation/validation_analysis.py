@@ -71,8 +71,8 @@ def analyze_validation(
 
     with torch.no_grad():
         for batch in validation_loader:
-            images = batch["image"].to(device)
-            labels = batch["label"].to(device)
+            images = batch["image"].to(device, non_blocking=device.type == "cuda")
+            labels = batch["label"].to(device, non_blocking=device.type == "cuda")
 
             scores = model(images)
             losses = criterion(scores, labels)
