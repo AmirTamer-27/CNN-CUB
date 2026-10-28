@@ -58,6 +58,15 @@ No weight updates, overall accuracy, first-five preview or MLflow connection are
 - **Different architecture:** edit the CNN or add another model file, then update model selection in `cli.py`. Changing the model name in YAML alone does not implement it.
 - **Comparing results:** keep the data split fixed and compare validation metrics. Commit code changes so each experiment can be tied to its code version.
 
+## Features from multiple depths
+
+Run `python -m src.cli train --config configs/classification_scratch_multidepth.yaml`
+to compare against the 320px delayed-pooling experiment with the same settings.
+`src/models/bird_cnn_multidepth.py` reuses its six blocks, globally averages
+outputs from blocks 4, 5, and 6, and concatenates their 128, 256, and 512 features.
+Dropout and a linear layer map these 896 values to species scores. For saved-weight
+analysis, use this same config and the multi-depth run's weights.
+
 ## Augmentation experiment
 
 Run with `--config configs/classification_scratch_augmented.yaml` for independent

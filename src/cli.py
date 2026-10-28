@@ -8,6 +8,7 @@ import mlflow
 from src.data.dataset import make_loaders
 from src.models.bird_cnn import BirdCNN
 from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
+from src.models.bird_cnn_multidepth import BirdCNNMultiDepth
 from src.training.trainer import fit
 
 
@@ -28,8 +29,10 @@ def main():
         config = yaml.safe_load(file)
 
     # Only these choices have been implemented so far.
-    if config["model"] not in ("bird_cnn", "bird_cnn_delayed_pooling"):
-        raise ValueError("Choose model: bird_cnn or bird_cnn_delayed_pooling.")
+    if config["model"] not in ("bird_cnn", "bird_cnn_delayed_pooling", "bird_cnn_multidepth"):
+        raise ValueError(
+            "Choose model: bird_cnn, bird_cnn_delayed_pooling, or bird_cnn_multidepth."
+        )
     if args.command == "train" and config["optimizer"] != "adam":
         raise ValueError("This version supports optimizer: adam.")
 
@@ -45,8 +48,10 @@ def main():
     # 3. Create the network structure selected in YAML.
     if config["model"] == "bird_cnn":
         model_class = BirdCNN
-    else:
+    elif config["model"] == "bird_cnn_delayed_pooling":
         model_class = BirdCNNDelayedPooling
+    else:
+        model_class = BirdCNNMultiDepth
     model = model_class(
         num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
     ).to(device)
