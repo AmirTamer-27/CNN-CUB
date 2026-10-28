@@ -1,5 +1,5 @@
 # Same settings as the 320px delayed-pooling run; only the classifier changes.
-run_name: scratch_multidepth_bestSettings_320
+run_name: scratch_multidepth_bestSettings_320_70
 model: bird_cnn_multidepth
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
@@ -7,7 +7,7 @@ validation_fraction: 0.2
 seed: 42
 image_size: 320
 batch_size: 32
-epochs: 50
+epochs: 70
 optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
