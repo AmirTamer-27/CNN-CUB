@@ -21,6 +21,8 @@ def make_loaders(config):
             flip_probability=config.get("horizontal_flip_probability", 0.0),
             contrast_probability=config.get("contrast_change_probability", 0.0),
             contrast_strength=config.get("contrast_strength", 0.2),
+            brightness_probability=config.get("brightness_change_probability", 0.0),
+            brightness_strength=config.get("brightness_strength", 0.2),
         )
 
     def prepare_validation(batch):
