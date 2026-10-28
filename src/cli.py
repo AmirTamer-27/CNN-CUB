@@ -22,11 +22,7 @@ def main():
     )
     analysis_command.add_argument("--config", required=True)
     analysis_command.add_argument("--weights", required=True)
-    analysis_command.add_argument("--top", type=int, default=12)
-    analysis_command.add_argument("--output-dir", default="outputs/validation_analysis")
     args = parser.parse_args()
-    if args.command == "analyze-validation" and args.top < 1:
-        parser.error("--top must be at least 1")
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
@@ -71,7 +67,6 @@ def main():
 
         analyze_validation(
             model, validation_loader, class_names, device,
-            output_dir=args.output_dir, top=args.top,
         )
         return
 

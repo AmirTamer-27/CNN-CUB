@@ -65,32 +65,31 @@ No input standardization has been added. Resizing uses the original RGB/LANCZOS/
 
 ## Analyze saved validation predictions
 
-After training saves `model_weights.pth`, inspect it from the repository root:
-
 ```bash
-python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth --top 12
+python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth
 ```
 
-Use the configuration and model code version that produced the weights: the
-model name, image size, label mapping, validation fraction, and split seed must
-match. Loading a state dictionary checks tensor names and sizes, but cannot detect
-a changed pooling stride, since pooling has no saved weights.
+Use the same configuration and model code version that produced the weights.
+The command recreates the validation split, loads the saved state and calls the
+simple loop in `src/evaluation/validation_analysis.py`. It calculates one loss
+and prediction per image, builds a Pandas DataFrame, and prints the 20 classes
+with the highest mean loss, alongside support and recall (%). It also saves
+`outputs/validation_analysis/highest_loss_images.png` (up to 12 highest-loss
+images) and `outputs/validation_analysis/highest_loss_class.png` (up to six
+random validation samples from the class with the highest mean loss). Each image
+shows the true species, predicted species, and loss. Images use the validation
+loader's sequential order and current [0, 1] preprocessing. No overall accuracy
+or first-five preview is printed. No MLflow connection or JSON files are needed.
+The two PNG files are replaced on the next analysis run. Pooling changes
+cannot be detected from weights alone, because pooling has no saved parameters.
 
-This command loads the state onto CPU, copies it into the selected model, and runs
-only validation inference in evaluation mode without gradients or optimizer
-updates. It never loads the official test source and requires no MLflow login.
-It prints overall loss/accuracy/macro recall, per-class loss and recall, common
-confusion pairs, and the highest-loss samples. The full tables and an image grid
-are saved in one self-contained `outputs/validation_analysis/report.html`; no JSON
-is created. `--top` controls the terminal previews and image count. Use
-`--output-dir outputs/another_analysis` to keep reports for different models.
+After running the CLI in Colab/Kaggle, display the grids in a Python cell:
 
-In Colab/Kaggle, launch the command with `!python ...`, then download the HTML
-from the notebook's file browser and open it in a browser. A subprocess cannot
-display a Matplotlib plot directly in the notebook. Inputs are shown using the
-current unstandardized [0, 1] tensor values. Indices refer to validation-subset
-positions. Class statistics with roughly six images per class are noisy; visually
-inspect failures rather than assuming an automatic diagnosis of their cause.
+```python
+from IPython.display import Image, display
+display(Image(filename="outputs/validation_analysis/highest_loss_images.png"))
+display(Image(filename="outputs/validation_analysis/highest_loss_class.png"))
+```
 
 ## Training metrics
 

@@ -41,15 +41,16 @@ The official test dataset is not loaded during training. The CLI saves the final
 ## Analyze a saved model
 
 ```bash
-python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth --top 12
+python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth
 ```
 
-The config and architecture code must match the weights. This command recreates
-the validation split, loads the trained state, and runs inference without weight
-updates. It prints overall metrics, class losses/recall, confusion pairs, and
-highest-loss predictions. Open `outputs/validation_analysis/report.html` for the
-image grid and full tables. On Kaggle/Colab, download that HTML from the file
-browser. No MLflow connection or JSON files are needed for this command.
+The config and architecture code must match the weights. The command recreates
+the validation split and loads the trained state. The analysis file uses the
+simple per-image loss/prediction loop followed by a Pandas summary. It prints
+classes with highest mean loss, sample counts and recall. Two labeled image grids
+are saved under `outputs/validation_analysis/`: `highest_loss_images.png` and
+`highest_loss_class.png`. Display these files in a notebook after running the CLI.
+No weight updates, overall accuracy, first-five preview or MLflow connection are involved.
 
 ## Trying another experiment
 
