@@ -16,4 +16,4 @@ horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
 contrast_strength: 0.2
 brightness_change_probability: 0.5
-brightness_strength: 0.2  # Random multiplier from 0.8 to 1.2 when applied.
+brightness_strength: 0.2
