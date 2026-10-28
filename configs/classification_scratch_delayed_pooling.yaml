@@ -5,7 +5,7 @@ num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
 validation_fraction: 0.2
 seed: 42
-image_size: 224
+image_size: 320
 batch_size: 32
 epochs: 50
 optimizer: adam
