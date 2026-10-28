@@ -7,17 +7,21 @@ import torch
 from torch import nn
 
 
-def plot_samples(samples, dataset, title, filename):
-    columns = min(3, len(samples))
-    rows = (len(samples) + columns - 1) // columns
+def plot_samples(samples, dataset, title, filename, results):
+    # Each pair contains the analyzed image and another image of its true species.
+    pairs_per_row = min(2, len(samples))
+    columns = 2 * pairs_per_row
+    rows = (len(samples) + pairs_per_row - 1) // pairs_per_row
     figure, axes = plt.subplots(
-        rows, columns, figsize=(6 * columns, 4 * rows), squeeze=False
+        rows, columns, figsize=(4 * columns, 4 * rows), squeeze=False
     )
 
     for ax in axes.flat:
         ax.axis("off")
 
-    for ax, (_, row) in zip(axes.flat, samples.iterrows()):
+    for position, (_, row) in enumerate(samples.iterrows()):
+        ax = axes.flat[2 * position]
+        reference_ax = axes.flat[2 * position + 1]
         image = dataset[int(row["image_index"])]["image"]
         ax.imshow(image.cpu().permute(1, 2, 0).clamp(0, 1))
         ax.set_title(
@@ -26,6 +30,24 @@ def plot_samples(samples, dataset, title, filename):
             f"Loss: {row['loss']:.3f}",
             fontsize=9,
         )
+
+        # Use a different validation image with the same true label.
+        references = results[
+            (results["true_class"] == row["true_class"])
+            & (results["image_index"] != row["image_index"])
+        ]
+        reference_ax.set_title(
+            f"True-class reference\n{row['true_class']}", fontsize=9
+        )
+        if references.empty:
+            reference_ax.text(
+                0.5, 0.5, "No other validation image in this class",
+                ha="center", va="center", wrap=True,
+            )
+        else:
+            reference_index = int(references.iloc[0]["image_index"])
+            reference = dataset[reference_index]["image"]
+            reference_ax.imshow(reference.cpu().permute(1, 2, 0).clamp(0, 1))
 
     figure.suptitle(title)
     figure.tight_layout(rect=(0, 0, 1, 0.94))
@@ -91,6 +113,7 @@ def analyze_validation(
         highest_loss_images, validation_loader.dataset,
         "Highest-loss validation images",
         output_dir / "highest_loss_images.png",
+        results,
     )
 
     worst_class = per_class["mean_loss"].idxmax()
@@ -101,5 +124,6 @@ def analyze_validation(
         class_samples, validation_loader.dataset,
         f"Samples from highest-average-loss class: {worst_class}",
         output_dir / "highest_loss_class.png",
+        results,
     )
     return results, per_class
