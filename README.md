@@ -46,7 +46,7 @@ working package versions after the first successful Kaggle run.
 4. `BirdCNN` defines the same six explicit blocks and global average pooling.
 5. `fit` calls `train_one_epoch` and then `validate` each epoch.
 6. Each epoch prints metrics; metric history is returned in memory.
-   Training does not write result files or model checkpoints.
+   The CLI saves the final model state and uploads it to MLflow.
 
 Validation uses evaluation mode and disables gradients; it does not update weights
 or BatchNorm running statistics. Training metrics accumulate batch predictions
@@ -63,13 +63,45 @@ The refactor also honors `num_classes` in the final layer and exposes
 the range of contrast factors.
 No input standardization has been added. Resizing uses the original RGB/LANCZOS/gray-padding function.
 
-## Experiment results
+## Analyze saved validation predictions
+
+After training saves `model_weights.pth`, inspect it from the repository root:
+
+```bash
+python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth --top 12
+```
+
+Use the configuration and model code version that produced the weights: the
+model name, image size, label mapping, validation fraction, and split seed must
+match. Loading a state dictionary checks tensor names and sizes, but cannot detect
+a changed pooling stride, since pooling has no saved weights.
+
+This command loads the state onto CPU, copies it into the selected model, and runs
+only validation inference in evaluation mode without gradients or optimizer
+updates. It never loads the official test source and requires no MLflow login.
+It prints overall loss/accuracy/macro recall, per-class loss and recall, common
+confusion pairs, and the highest-loss samples. The full tables and an image grid
+are saved in one self-contained `outputs/validation_analysis/report.html`; no JSON
+is created. `--top` controls the terminal previews and image count. Use
+`--output-dir outputs/another_analysis` to keep reports for different models.
+
+In Colab/Kaggle, launch the command with `!python ...`, then download the HTML
+from the notebook's file browser and open it in a browser. A subprocess cannot
+display a Matplotlib plot directly in the notebook. Inputs are shown using the
+current unstandardized [0, 1] tensor values. Indices refer to validation-subset
+positions. Class statistics with roughly six images per class are noisy; visually
+inspect failures rather than assuming an automatic diagnosis of their cause.
+
+## Training metrics
 
 Metrics are printed and returned by `fit` as an in-memory history list. The CLI
-captures that history and uploads it to MLflow after training. No output folder, copied configuration,
-JSON result files, or checkpoints are created by the training code.
+captures that history and uploads it to MLflow after training. Training does not
+create JSON result files or copy configuration files.
 MLflow records parameters and uploads epoch metrics after training finishes.
-Saving trained weights is not implemented.
+The CLI saves the final model state as `model_weights.pth` and logs it to the
+MLflow run under `weights/`. This file is overwritten locally by the next training
+run, while MLflow retains each run's copy. This saves the final epoch, not the best
+validation epoch.
 
 Accuracy and recall are percentages. The test set is reserved for final evaluation;
 a test command is not yet implemented. A fixed seed helps repeat comparisons but

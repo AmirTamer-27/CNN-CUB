@@ -1,5 +1,5 @@
 # Only the first pooling stride changes; training settings match the regularized baseline.
-run_name: scratch_delayed_pooling_a_d_evenLowerReg_40
+run_name: scratch_delayed_pooling_a_d_LowerReg_50
 model: bird_cnn_delayed_pooling
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train

@@ -36,7 +36,20 @@ The same command can run on Kaggle after cloning the repository.
 5. **During data loading:** `with_transform` calls the preparation function in `transforms.py` when samples are requested. The DataLoader stacks their tensors into batches.
 6. **After training:** `fit` returns the metric history, and the CLI uploads each epoch's metrics to the MLflow run.
 
-The official test dataset is not loaded during training. No result files or model checkpoints are saved. The CLI logs settings and metric history to DagsHub through MLflow; credentials come from the environment.
+The official test dataset is not loaded during training. The CLI saves the final model state in `model_weights.pth` and uploads it to the MLflow run under `weights/`, alongside settings and metric history. Credentials come from the environment.
+
+## Analyze a saved model
+
+```bash
+python -m src.cli analyze-validation --config configs/classification_scratch_delayed_pooling.yaml --weights model_weights.pth --top 12
+```
+
+The config and architecture code must match the weights. This command recreates
+the validation split, loads the trained state, and runs inference without weight
+updates. It prints overall metrics, class losses/recall, confusion pairs, and
+highest-loss predictions. Open `outputs/validation_analysis/report.html` for the
+image grid and full tables. On Kaggle/Colab, download that HTML from the file
+browser. No MLflow connection or JSON files are needed for this command.
 
 ## Trying another experiment
 

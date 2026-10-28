@@ -17,7 +17,16 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     train_command = commands.add_parser("train")
     train_command.add_argument("--config", required=True)
+    analysis_command = commands.add_parser(
+        "analyze-validation", help="Inspect a saved model on the validation split"
+    )
+    analysis_command.add_argument("--config", required=True)
+    analysis_command.add_argument("--weights", required=True)
+    analysis_command.add_argument("--top", type=int, default=12)
+    analysis_command.add_argument("--output-dir", default="outputs/validation_analysis")
     args = parser.parse_args()
+    if args.command == "analyze-validation" and args.top < 1:
+        parser.error("--top must be at least 1")
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
@@ -25,7 +34,7 @@ def main():
     # Only these choices have been implemented so far.
     if config["model"] not in ("bird_cnn", "bird_cnn_delayed_pooling"):
         raise ValueError("Choose model: bird_cnn or bird_cnn_delayed_pooling.")
-    if config["optimizer"] != "adam":
+    if args.command == "train" and config["optimizer"] != "adam":
         raise ValueError("This version supports optimizer: adam.")
 
     # 2. Set the PyTorch seed and select the device.
@@ -37,12 +46,7 @@ def main():
     else:
         device = torch.device("cpu")
 
-    # 3. Prepare the data.
-    train_loader, validation_loader, class_names = make_loaders(config)
-    if len(class_names) != config["num_classes"]:
-        raise ValueError("num_classes must match the number of dataset classes.")
-
-    # 4. Create a fresh model, loss function, and optimizer.
+    # 3. Create the network structure selected in YAML.
     if config["model"] == "bird_cnn":
         model_class = BirdCNN
     else:
@@ -50,6 +54,28 @@ def main():
     model = model_class(
         num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
     ).to(device)
+
+    if args.command == "analyze-validation":
+        # Load onto CPU first so files saved on a GPU also work on other devices.
+        state = torch.load(args.weights, map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+
+    # Recreate the same seeded split and preprocessing used during training.
+    train_loader, validation_loader, class_names = make_loaders(config)
+    if len(class_names) != config["num_classes"]:
+        raise ValueError("num_classes must match the number of dataset classes.")
+    print(f"Device: {device}")
+
+    if args.command == "analyze-validation":
+        from src.evaluation.validation_analysis import analyze_validation
+
+        analyze_validation(
+            model, validation_loader, class_names, device,
+            output_dir=args.output_dir, top=args.top,
+        )
+        return
+
+    # 4. Training creates an optimizer; analysis never updates the weights.
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -58,7 +84,6 @@ def main():
     )
 
     # 5. Configure MLflow and start one run for this training attempt.
-    print(f"Device: {device}")
     mlflow.set_tracking_uri(
         "https://dagshub.com/AmirTamer-27/CNN-CUD.mlflow"
     )
@@ -86,6 +111,11 @@ def main():
             model, train_loader, validation_loader,
             criterion, optimizer, device, config,
         )
+        torch.save(model.state_dict(), "model_weights.pth")
+
+        # Keep a copy in the current MLflow run.
+        
+        mlflow.log_artifact(f"{config['run_name']}.pth", artifact_path="weights")
 
         # Upload the per-epoch history after training finishes.
         for result in history:
