@@ -106,11 +106,11 @@ def main():
             model, train_loader, validation_loader,
             criterion, optimizer, device, config,
         )
-        torch.save(model.state_dict(), "model_weights.pth")
+        weights_path = f"{config['run_name']}.pth"
+        torch.save(model.state_dict(), weights_path)
 
         # Keep a copy in the current MLflow run.
-        
-        mlflow.log_artifact(f"{config['run_name']}.pth", artifact_path="weights")
+        mlflow.log_artifact(weights_path, artifact_path="weights")
 
         # Upload the per-epoch history after training finishes.
         for result in history:

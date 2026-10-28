@@ -36,7 +36,7 @@ The same command can run on Kaggle after cloning the repository.
 5. **During data loading:** `with_transform` calls the preparation function in `transforms.py` when samples are requested. The DataLoader stacks their tensors into batches.
 6. **After training:** `fit` returns the metric history, and the CLI uploads each epoch's metrics to the MLflow run.
 
-The official test dataset is not loaded during training. The CLI saves the final model state in `model_weights.pth` and uploads it to the MLflow run under `weights/`, alongside settings and metric history. Credentials come from the environment.
+The official test dataset is not loaded during training. The CLI saves the final model state in `<run_name>.pth` and uploads it to the MLflow run under `weights/`, alongside settings and metric history. Credentials come from the environment.
 
 ## Analyze a saved model
 

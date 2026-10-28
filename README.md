@@ -97,9 +97,9 @@ Metrics are printed and returned by `fit` as an in-memory history list. The CLI
 captures that history and uploads it to MLflow after training. Training does not
 create JSON result files or copy configuration files.
 MLflow records parameters and uploads epoch metrics after training finishes.
-The CLI saves the final model state as `model_weights.pth` and logs it to the
-MLflow run under `weights/`. This file is overwritten locally by the next training
-run, while MLflow retains each run's copy. This saves the final epoch, not the best
+The CLI saves the final model state as `<run_name>.pth` and logs it to the
+MLflow run under `weights/`. Reusing a run name overwrites its local file, while
+MLflow retains each run's copy. This saves the final epoch, not the best
 validation epoch.
 
 Accuracy and recall are percentages. The test set is reserved for final evaluation;
