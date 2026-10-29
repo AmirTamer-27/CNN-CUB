@@ -13,8 +13,8 @@ from torch.nn import functional as F
 
 
 def gradcam_maps(model, image, class_ids, device):
-    # Use the last convolution in block 6's main path, before pooling.
-    block = model.block6
+    # ResNet-18 ends at block 8; the other current models end at block 6.
+    block = model.block8 if hasattr(model, "block8") else model.block6
     main_path = getattr(block, "main_path", block)
     target_layer = [layer for layer in main_path.modules()
                     if isinstance(layer, nn.Conv2d)][-1]

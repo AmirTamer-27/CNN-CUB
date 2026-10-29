@@ -61,9 +61,16 @@ def validate(model, loader, criterion, device, num_classes):
 
 def fit(model, train_loader, validation_loader, criterion, optimizer, device, config):
     history = []
+    scheduler = None
+    if config.get("lr_scheduler", "none") == "step":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=config.get("lr_step_size", 30),
+            gamma=config.get("lr_gamma", 0.1),
+        )
 
     for epoch in range(config["epochs"]):
-        print(f"Epoch {epoch + 1}/{config['epochs']}")
+        learning_rate = optimizer.param_groups[0]["lr"]
+        print(f"Epoch {epoch + 1}/{config['epochs']} | Learning rate: {learning_rate:g}")
         train_metrics = train_one_epoch(
             model, train_loader, criterion, optimizer, device, config["num_classes"],
         )
@@ -74,6 +81,7 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
         # Keep measurements in memory only; no JSON files are written.
         history.append({
             "epoch": epoch + 1,
+            "learning_rate": learning_rate,
             "train": train_metrics,
             "validation": validation_metrics,
         })
@@ -85,5 +93,8 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
             f"Val accuracy: {validation_metrics['accuracy']:.2f}% | "
             f"Val macro recall: {validation_metrics['macro_recall']:.2f}%"
         )
+        # The reduced rate applies to the next epoch, not this epoch's metrics.
+        if scheduler is not None:
+            scheduler.step()
 
     return history

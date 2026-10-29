@@ -1,0 +1,19 @@
+# Explicit ResNet-18 implementation; Adam with constant learning rate.
+# Dropout and weight decay are removed for this trial.
+run_name: scratch_resnet18_adam_320_90_no_decay
+model: bird_resnet18
+num_classes: 200
+train_dataset: Multimodal-Fatima/CUB_train
+validation_fraction: 0.2
+seed: 42
+image_size: 320
+batch_size: 32
+epochs: 90
+optimizer: adam
+dropout: 0.0
+learning_rate: 0.001
+weight_decay: 0.0
+lr_scheduler: none
+horizontal_flip_probability: 0.5
+contrast_change_probability: 0.5
+contrast_strength: 0.2

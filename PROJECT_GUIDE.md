@@ -85,6 +85,37 @@ The config keeps the best baseline run's settings: 320-pixel inputs, 70 epochs,
 batch size 32, Adam at 0.001, weight decay 0.0001, dropout 0.3, and flip/contrast augmentation.
 This is a custom six-block residual CNN, not the standard ResNet-18 layout.
 
+## Spatial attention experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_attention.yaml`.
+`src/models/bird_cnn_attention.py` reuses the delayed-pooling backbone. A learned
+1x1 convolution generates one spatial score map; softmax makes its weights sum
+to one, and a weighted sum replaces uniform global average pooling. Attention
+starts uniform and is used during both training and inference. This is a simple
+spatial-attention model, not WS-DAN: no attention cropping, dropping, or part loss.
+The config uses Adam 0.001, 320px inputs, batch 32, 70 epochs, and flip/contrast
+augmentation, with dropout and weight decay both zero. Because regularization
+also changes, comparison with the old baseline does not isolate attention alone.
+For a controlled follow-up, use the same zero-dropout/zero-decay settings on the
+plain delayed-pooling model as well.
+
+## Standard ResNet-18 experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_resnet18.yaml`.
+`src/models/bird_resnet18.py` explicitly defines all eight residual blocks,
+using our own `ResidualBlock` class. It includes the standard 7x7 stride-2 stem,
+initial max pool, four stages of two blocks, and 200 output scores.
+It is randomly initialized, with no torchvision model class or pretrained download.
+This is separate from the earlier six-block custom residual model.
+
+The config uses Adam with a constant learning rate of 0.001, 90 epochs,
+batch size 32, zero weight decay and zero dropout. These are experiment settings,
+not a claim of an optimal published ResNet recipe. Our existing 320px resize/pad,
+[0,1] tensors and flip/contrast policy are retained.
+Batch normalization stays enabled. Train/validation curves and the learning rate
+are logged to MLflow. No scheduler is enabled for old configs unless requested.
+Both new models support the existing `analyze-validation` command and Grad-CAM.
+
 ## Augmentation experiment
 
 Run with `--config configs/classification_scratch_augmented.yaml` for independent

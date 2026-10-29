@@ -10,6 +10,8 @@ from src.models.bird_cnn import BirdCNN
 from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
 from src.models.bird_cnn_multidepth import BirdCNNMultiDepth
 from src.models.bird_cnn_residual import BirdResidualCNN
+from src.models.bird_cnn_attention import BirdCNNAttention
+from src.models.bird_resnet18 import BirdResNet18
 from src.training.trainer import fit
 
 
@@ -32,13 +34,17 @@ def main():
     # Only these choices have been implemented so far.
     if config["model"] not in (
         "bird_cnn", "bird_cnn_delayed_pooling", "bird_cnn_multidepth", "bird_cnn_residual",
+        "bird_cnn_attention", "bird_resnet18",
     ):
         raise ValueError(
             "Choose model: bird_cnn, bird_cnn_delayed_pooling, "
-            "bird_cnn_multidepth, or bird_cnn_residual."
+            "bird_cnn_multidepth, bird_cnn_residual, bird_cnn_attention, or bird_resnet18."
         )
-    if args.command == "train" and config["optimizer"] != "adam":
-        raise ValueError("This version supports optimizer: adam.")
+    if args.command == "train":
+        if config["optimizer"] not in ("adam", "sgd"):
+            raise ValueError("Choose optimizer: adam or sgd.")
+        if config.get("lr_scheduler", "none") not in ("none", "step"):
+            raise ValueError("Choose lr_scheduler: none or step.")
 
     # 2. Set the PyTorch seed and select the device.
     torch.manual_seed(config["seed"])
@@ -56,8 +62,12 @@ def main():
         model_class = BirdCNNDelayedPooling
     elif config["model"] == "bird_cnn_multidepth":
         model_class = BirdCNNMultiDepth
-    else:
+    elif config["model"] == "bird_cnn_residual":
         model_class = BirdResidualCNN
+    elif config["model"] == "bird_cnn_attention":
+        model_class = BirdCNNAttention
+    else:
+        model_class = BirdResNet18
     model = model_class(
         num_classes=config["num_classes"], dropout=config.get("dropout", 0.0)
     ).to(device)
@@ -83,11 +93,17 @@ def main():
 
     # 4. Training creates an optimizer; analysis never updates the weights.
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=config["learning_rate"],
-        weight_decay=config.get("weight_decay", 0.0),
-    )
+    if config["optimizer"] == "adam":
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=config["learning_rate"],
+            weight_decay=config.get("weight_decay", 0.0),
+        )
+    else:
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=config["learning_rate"],
+            momentum=config.get("momentum", 0.9),
+            weight_decay=config.get("weight_decay", 0.0),
+        )
 
     # 5. Configure MLflow and start one run for this training attempt.
     mlflow.set_tracking_uri(
@@ -108,6 +124,11 @@ def main():
             "batch_size": config["batch_size"],
             "epochs": config["epochs"],
             "optimizer": config["optimizer"],
+            "momentum": config.get("momentum", 0.0),
+            "pretrained": False,
+            "lr_scheduler": config.get("lr_scheduler", "none"),
+            "lr_step_size": config.get("lr_step_size", 30),
+            "lr_gamma": config.get("lr_gamma", 0.1),
             "learning_rate": config["learning_rate"],
             "weight_decay": config.get("weight_decay", 0.0),
             "seed": config["seed"],
@@ -135,6 +156,7 @@ def main():
                     "val_loss": result["validation"]["loss"],
                     "val_accuracy": result["validation"]["accuracy"],
                     "val_macro_recall": result["validation"]["macro_recall"],
+                    "learning_rate": result.get("learning_rate", config["learning_rate"]),
                 },
                 step=result["epoch"],
             )
