@@ -1,4 +1,4 @@
-run_name: scratch_delayed_pooling_lr_plateau_320_70
+run_name: scratch_delayed_pooling_lr+cutout+StrongReg_plateau_320_70
 model: bird_cnn_delayed_pooling
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
@@ -16,10 +16,10 @@ lr_plateau_factor: 0.5
 lr_plateau_patience: 5
 lr_plateau_threshold: 0.001
 lr_plateau_min_lr: 0.000001
-weight_decay: 0.0001
+weight_decay: 0.0003
 horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
 contrast_strength: 0.2
-cutout_probability: 0.0
+cutout_probability: 0.5
 cutout_min_fraction: 0.25
 cutout_max_fraction: 0.30

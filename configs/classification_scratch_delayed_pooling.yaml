@@ -1,4 +1,4 @@
-run_name: scratch_delayed_pooling_cutout_320_70
+run_name: scratch_delayed_pooling_cutout+LR_320_70
 model: bird_cnn_delayed_pooling
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
@@ -11,7 +11,7 @@ optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
 # Off for the Cutout-only experiment; set to plateau to enable.
-lr_scheduler: none
+lr_scheduler: plateau
 lr_plateau_factor: 0.5
 lr_plateau_patience: 5
 lr_plateau_threshold: 0.001
