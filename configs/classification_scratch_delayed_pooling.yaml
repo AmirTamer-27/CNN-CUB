@@ -1,5 +1,4 @@
-# Only the first pooling stride changes; training settings match the regularized baseline.
-run_name: scratch_delayed_pooling_bestSettings_320_70_0.5d
+run_name: scratch_delayed_pooling_cutout_320_70
 model: bird_cnn_delayed_pooling
 num_classes: 200
 train_dataset: Multimodal-Fatima/CUB_train
@@ -9,9 +8,12 @@ image_size: 320
 batch_size: 32
 epochs: 70
 optimizer: adam
-dropout: 0.5
+dropout: 0.3
 learning_rate: 0.001
 weight_decay: 0.0001
 horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
 contrast_strength: 0.2
+cutout_probability: 0.5
+cutout_min_fraction: 0.25
+cutout_max_fraction: 0.30

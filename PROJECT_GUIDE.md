@@ -85,20 +85,6 @@ The config keeps the best baseline run's settings: 320-pixel inputs, 70 epochs,
 batch size 32, Adam at 0.001, weight decay 0.0001, dropout 0.3, and flip/contrast augmentation.
 This is a custom six-block residual CNN, not the standard ResNet-18 layout.
 
-## Spatial attention experiment
-
-Run `python -m src.cli train --config configs/classification_scratch_attention.yaml`.
-`src/models/bird_cnn_attention.py` reuses the delayed-pooling backbone. A learned
-1x1 convolution generates one spatial score map; softmax makes its weights sum
-to one, and a weighted sum replaces uniform global average pooling. Attention
-starts uniform and is used during both training and inference. This is a simple
-spatial-attention model, not WS-DAN: no attention cropping, dropping, or part loss.
-The config uses Adam 0.001, 320px inputs, batch 32, 70 epochs, and flip/contrast
-augmentation, with dropout and weight decay both zero. Because regularization
-also changes, comparison with the old baseline does not isolate attention alone.
-For a controlled follow-up, use the same zero-dropout/zero-decay settings on the
-plain delayed-pooling model as well.
-
 ## Standard ResNet-18 experiment
 
 Run `python -m src.cli train --config configs/classification_scratch_resnet18.yaml`.
@@ -114,7 +100,20 @@ not a claim of an optimal published ResNet recipe. Our existing 320px resize/pad
 [0,1] tensors and flip/contrast policy are retained.
 Batch normalization stays enabled. Train/validation curves and the learning rate
 are logged to MLflow. No scheduler is enabled for old configs unless requested.
-Both new models support the existing `analyze-validation` command and Grad-CAM.
+ResNet-18 supports the existing `analyze-validation` command and Grad-CAM.
+
+## Cutout experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_cutout.yaml`.
+The config matches the successful delayed-pooling run (320px, 70 epochs, Adam
+0.001 constant, dropout 0.3, weight decay 0.0001, flip/contrast), adding only Cutout.
+For each training image, `prepare_images` masks one random square with probability
+0.5 after resize, augmentation and tensor conversion. The nominal side is sampled
+from 25–30% of the input side: 80–96px at 320px. The square has a uniformly sampled
+center and is clipped at image edges, so edge patches can be smaller. Fill is gray
+128/255, matching padding. No bounding boxes or bird-overlap checks are used.
+Validation never uses Cutout. Old configs default to Cutout off; workers stay at 2.
+Cutout settings are logged to MLflow. The learning-rate schedule is unchanged.
 
 ## Augmentation experiment
 

@@ -23,6 +23,9 @@ def make_loaders(config):
             contrast_strength=config.get("contrast_strength", 0.2),
             brightness_probability=config.get("brightness_change_probability", 0.0),
             brightness_strength=config.get("brightness_strength", 0.2),
+            cutout_probability=config.get("cutout_probability", 0.0),
+            cutout_min_fraction=config.get("cutout_min_fraction", 0.25),
+            cutout_max_fraction=config.get("cutout_max_fraction", 0.30),
         )
 
     def prepare_validation(batch):

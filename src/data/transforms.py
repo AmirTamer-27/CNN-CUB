@@ -1,5 +1,6 @@
 """Image preparation shared by training and validation."""
 from PIL import Image, ImageOps
+import torch
 from torchvision import transforms
 
 
@@ -22,8 +23,15 @@ def prepare_images(
     contrast_strength=0.2,
     brightness_probability=0.0,
     brightness_strength=0.2,
+    cutout_probability=0.0,
+    cutout_min_fraction=0.25,
+    cutout_max_fraction=0.30,
 ):
-    """Resize/pad, independently augment each image, then convert to tensors."""
+    """Resize/pad, augment, convert to tensors, and optionally apply one Cutout."""
+    if not 0 <= cutout_probability <= 1:
+        raise ValueError("cutout_probability must be between 0 and 1.")
+    if not 0 < cutout_min_fraction <= cutout_max_fraction <= 1:
+        raise ValueError("Cutout side fractions must satisfy 0 < min <= max <= 1.")
     horizontal_flip = transforms.RandomHorizontalFlip(
         p=flip_probability
     )
@@ -50,6 +58,23 @@ def prepare_images(
             image = random_brightness(image)
 
         image = to_tensor(image)
+
+        # One random square, independently sampled whenever this image is read.
+        # The zero-probability guard keeps old configs' random sequence unchanged.
+        if cutout_probability > 0 and torch.rand(()).item() < cutout_probability:
+            height, width = image.shape[-2:]
+            minimum = max(1, round(min(height, width) * cutout_min_fraction))
+            maximum = max(minimum, round(min(height, width) * cutout_max_fraction))
+            side = int(torch.randint(minimum, maximum + 1, ()).item())
+            center_y = int(torch.randint(height, ()).item())
+            center_x = int(torch.randint(width, ()).item())
+            top = max(0, center_y - side // 2)
+            bottom = min(height, center_y + (side + 1) // 2)
+            left = max(0, center_x - side // 2)
+            right = min(width, center_x + (side + 1) // 2)
+            # Match the neutral gray padding in [0, 1] tensor units.
+            image[:, top:bottom, left:right] = 128 / 255
+
         prepared_images.append(image)
 
     return {

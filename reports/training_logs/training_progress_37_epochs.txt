@@ -1,0 +1,153 @@
+Already up to date.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Device: cuda
+Epoch 1/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:12<00:00,  2.08it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.66it/s]
+Train loss: 5.3268 | Train accuracy: 0.29% | Val loss: 5.2961 | Val accuracy: 0.50% | Val macro recall: 0.50%
+Epoch 2/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:14<00:00,  2.02it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.84it/s]
+Train loss: 5.2754 | Train accuracy: 0.81% | Val loss: 5.2155 | Val accuracy: 0.92% | Val macro recall: 0.92%
+Epoch 3/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.87it/s]
+Train loss: 5.1106 | Train accuracy: 0.96% | Val loss: 5.0168 | Val accuracy: 1.33% | Val macro recall: 1.33%
+Epoch 4/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.70it/s]
+Train loss: 4.9616 | Train accuracy: 1.58% | Val loss: 4.9033 | Val accuracy: 2.09% | Val macro recall: 2.08%
+Epoch 5/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.72it/s]
+Train loss: 4.8471 | Train accuracy: 1.92% | Val loss: 4.8936 | Val accuracy: 2.42% | Val macro recall: 2.42%
+Epoch 6/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:15<00:00,  1.98it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.80it/s]
+Train loss: 4.7557 | Train accuracy: 2.42% | Val loss: 4.8089 | Val accuracy: 2.75% | Val macro recall: 2.75%
+Epoch 7/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.80it/s]
+Train loss: 4.6581 | Train accuracy: 3.50% | Val loss: 4.5920 | Val accuracy: 3.59% | Val macro recall: 3.58%
+Epoch 8/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:15<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  5.05it/s]
+Train loss: 4.5540 | Train accuracy: 4.23% | Val loss: 4.5307 | Val accuracy: 4.50% | Val macro recall: 4.52%
+Epoch 9/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:15<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.69it/s]
+Train loss: 4.4469 | Train accuracy: 5.13% | Val loss: 4.4527 | Val accuracy: 5.92% | Val macro recall: 5.92%
+Epoch 10/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.97it/s]
+Train loss: 4.3865 | Train accuracy: 5.44% | Val loss: 4.3805 | Val accuracy: 6.01% | Val macro recall: 6.00%
+Epoch 11/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.72it/s]
+Train loss: 4.2585 | Train accuracy: 6.69% | Val loss: 4.3310 | Val accuracy: 6.67% | Val macro recall: 6.67%
+Epoch 12/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.78it/s]
+Train loss: 4.2060 | Train accuracy: 7.61% | Val loss: 4.3594 | Val accuracy: 7.42% | Val macro recall: 7.45%
+Epoch 13/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.69it/s]
+Train loss: 4.1171 | Train accuracy: 8.55% | Val loss: 4.7273 | Val accuracy: 7.34% | Val macro recall: 7.35%
+Epoch 14/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.69it/s]
+Train loss: 3.9908 | Train accuracy: 9.84% | Val loss: 4.1733 | Val accuracy: 10.34% | Val macro recall: 10.37%
+Epoch 15/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.83it/s]
+Train loss: 3.8879 | Train accuracy: 11.18% | Val loss: 4.1343 | Val accuracy: 9.59% | Val macro recall: 9.58%
+Epoch 16/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.87it/s]
+Train loss: 3.7984 | Train accuracy: 12.99% | Val loss: 4.0404 | Val accuracy: 10.01% | Val macro recall: 10.05%
+Epoch 17/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.68it/s]
+Train loss: 3.6461 | Train accuracy: 15.02% | Val loss: 4.0049 | Val accuracy: 13.26% | Val macro recall: 13.25%
+Epoch 18/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.83it/s]
+Train loss: 3.5304 | Train accuracy: 17.18% | Val loss: 3.8435 | Val accuracy: 14.60% | Val macro recall: 14.58%
+Epoch 19/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.79it/s]
+Train loss: 3.4229 | Train accuracy: 18.98% | Val loss: 3.7703 | Val accuracy: 16.51% | Val macro recall: 16.50%
+Epoch 20/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.48it/s]
+Train loss: 3.2900 | Train accuracy: 20.77% | Val loss: 3.8979 | Val accuracy: 13.51% | Val macro recall: 13.50%
+Epoch 21/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.54it/s]
+Train loss: 3.1591 | Train accuracy: 25.03% | Val loss: 3.6767 | Val accuracy: 17.51% | Val macro recall: 17.50%
+Epoch 22/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.65it/s]
+Train loss: 3.0598 | Train accuracy: 24.86% | Val loss: 3.7381 | Val accuracy: 19.02% | Val macro recall: 19.03%
+Epoch 23/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.52it/s]
+Train loss: 2.9196 | Train accuracy: 28.45% | Val loss: 3.5718 | Val accuracy: 20.10% | Val macro recall: 20.10%
+Epoch 24/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.70it/s]
+Train loss: 2.7449 | Train accuracy: 31.76% | Val loss: 3.4627 | Val accuracy: 22.69% | Val macro recall: 22.67%
+Epoch 25/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.70it/s]
+Train loss: 2.6416 | Train accuracy: 34.22% | Val loss: 3.4525 | Val accuracy: 22.94% | Val macro recall: 22.93%
+Epoch 26/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.74it/s]
+Train loss: 2.4689 | Train accuracy: 37.83% | Val loss: 3.4808 | Val accuracy: 22.77% | Val macro recall: 22.75%
+Epoch 27/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.78it/s]
+Train loss: 2.3696 | Train accuracy: 39.46% | Val loss: 3.4699 | Val accuracy: 24.52% | Val macro recall: 24.55%
+Epoch 28/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.71it/s]
+Train loss: 2.2223 | Train accuracy: 41.69% | Val loss: 3.3478 | Val accuracy: 24.10% | Val macro recall: 24.10%
+Epoch 29/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.76it/s]
+Train loss: 2.1157 | Train accuracy: 45.28% | Val loss: 3.2886 | Val accuracy: 26.77% | Val macro recall: 26.75%
+Epoch 30/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.97it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.77it/s]
+Train loss: 1.9236 | Train accuracy: 49.36% | Val loss: 3.3708 | Val accuracy: 25.60% | Val macro recall: 25.58%
+Epoch 31/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.75it/s]
+Train loss: 1.7625 | Train accuracy: 53.53% | Val loss: 3.3175 | Val accuracy: 28.94% | Val macro recall: 28.92%
+Epoch 32/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.67it/s]
+Train loss: 1.6621 | Train accuracy: 55.77% | Val loss: 3.4770 | Val accuracy: 26.11% | Val macro recall: 26.08%
+Epoch 33/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.74it/s]
+Train loss: 1.5268 | Train accuracy: 58.50% | Val loss: 3.4833 | Val accuracy: 28.02% | Val macro recall: 28.00%
+Epoch 34/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.69it/s]
+Train loss: 1.4042 | Train accuracy: 62.23% | Val loss: 3.4993 | Val accuracy: 27.19% | Val macro recall: 27.17%
+Epoch 35/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.65it/s]
+Train loss: 1.2673 | Train accuracy: 65.46% | Val loss: 3.4333 | Val accuracy: 28.52% | Val macro recall: 28.50%
+Epoch 36/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:08<00:00,  4.74it/s]
+Train loss: 1.1256 | Train accuracy: 69.45% | Val loss: 3.5731 | Val accuracy: 28.36% | Val macro recall: 28.33%
+Epoch 37/70 | Learning rate: 0.001
+Training: 100%|███████████████████████████████| 150/150 [01:16<00:00,  1.96it/s]
+Validation: 100%|███████████████████████████████| 38/38 [00:07<00:00,  4.83it/s]
+Train loss: 1.0517 | Train accuracy: 71.74% | Val loss: 3.6512 | Val accuracy: 28.86% | Val macro recall: 28.83%
+Epoch 38/70 | Learning rate: 0.001
+Training:   3%|█                                | 5/150 [00:03<01:25,  1.70it/s]

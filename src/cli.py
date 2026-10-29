@@ -10,7 +10,6 @@ from src.models.bird_cnn import BirdCNN
 from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
 from src.models.bird_cnn_multidepth import BirdCNNMultiDepth
 from src.models.bird_cnn_residual import BirdResidualCNN
-from src.models.bird_cnn_attention import BirdCNNAttention
 from src.models.bird_resnet18 import BirdResNet18
 from src.training.trainer import fit
 
@@ -34,11 +33,11 @@ def main():
     # Only these choices have been implemented so far.
     if config["model"] not in (
         "bird_cnn", "bird_cnn_delayed_pooling", "bird_cnn_multidepth", "bird_cnn_residual",
-        "bird_cnn_attention", "bird_resnet18",
+        "bird_resnet18",
     ):
         raise ValueError(
             "Choose model: bird_cnn, bird_cnn_delayed_pooling, "
-            "bird_cnn_multidepth, bird_cnn_residual, bird_cnn_attention, or bird_resnet18."
+            "bird_cnn_multidepth, bird_cnn_residual, or bird_resnet18."
         )
     if args.command == "train":
         if config["optimizer"] not in ("adam", "sgd"):
@@ -64,8 +63,6 @@ def main():
         model_class = BirdCNNMultiDepth
     elif config["model"] == "bird_cnn_residual":
         model_class = BirdResidualCNN
-    elif config["model"] == "bird_cnn_attention":
-        model_class = BirdCNNAttention
     else:
         model_class = BirdResNet18
     model = model_class(
@@ -121,6 +118,10 @@ def main():
             "contrast_strength": config.get("contrast_strength", 0.2),
             "brightness_change_probability": config.get("brightness_change_probability", 0.0),
             "brightness_strength": config.get("brightness_strength", 0.2),
+            "cutout_probability": config.get("cutout_probability", 0.0),
+            "cutout_min_fraction": config.get("cutout_min_fraction", 0.25),
+            "cutout_max_fraction": config.get("cutout_max_fraction", 0.30),
+            "cutout_fill": 128 / 255,
             "batch_size": config["batch_size"],
             "epochs": config["epochs"],
             "optimizer": config["optimizer"],
