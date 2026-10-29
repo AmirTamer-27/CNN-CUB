@@ -67,6 +67,22 @@ outputs from blocks 4, 5, and 6, and concatenates their 128, 256, and 512 featur
 Dropout and a linear layer map these 896 values to species scores. For saved-weight
 analysis, use this same config and the multi-depth run's weights.
 
+## Residual experiment with three stages
+
+Run `python -m src.cli train --config configs/classification_scratch_residual.yaml`.
+`src/models/bird_cnn_residual.py` defines one residual block and a six-block CNN.
+Each block adds its convolution path to a shortcut, then applies ReLU.
+A 3x3 stem convolution produces 32 channels without downsampling. Blocks 1–2
+use 32 channels, blocks 3–4 use 64, and blocks 5–6 use 128. Blocks 3 and 5
+use stride 2 in both the first main-path convolution and the 1x1 shortcut.
+The other four blocks use identity shortcuts. There is no max pooling.
+For a 320x320 input, stage resolutions are 320x320, 160x160, and 80x80.
+Global average pooling produces 128 features; dropout and a linear classifier
+produce the species scores. Earlier residual-model weights do not match this layout.
+The config keeps the best baseline run's settings: 320-pixel inputs, 70 epochs,
+batch size 32, Adam at 0.001, weight decay 0.0001, dropout 0.3, and flip/contrast augmentation.
+This is a custom six-block residual CNN, not the standard ResNet-18 layout.
+
 ## Augmentation experiment
 
 Run with `--config configs/classification_scratch_augmented.yaml` for independent
