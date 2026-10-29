@@ -6,7 +6,7 @@ validation_fraction: 0.2
 seed: 42
 image_size: 320
 batch_size: 32
-epochs: 70
+epochs: 80
 optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
