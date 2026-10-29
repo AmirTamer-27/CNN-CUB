@@ -92,7 +92,11 @@ def plot_samples(samples, dataset, model, device, title, filename):
             ]:
                 ax = axes[position, column]
                 if cam.max() > 0:
-                    ax.imshow(cam, cmap="jet", vmin=0, vmax=1, alpha=0.45 * cam.numpy())
+                    # Blend RGB pixels explicitly so saved PNGs retain the image.
+                    heatmap = plt.get_cmap("jet")(cam.numpy())[:, :, :3]
+                    opacity = 0.5 * cam.numpy()[:, :, None]
+                    overlay = original.numpy() * (1 - opacity) + heatmap * opacity
+                    ax.imshow(overlay.clip(0, 1))
                     note = ""
                 else:
                     note = "\nNo positive Grad-CAM response"
