@@ -42,8 +42,8 @@ def main():
     if args.command == "train":
         if config["optimizer"] not in ("adam", "sgd"):
             raise ValueError("Choose optimizer: adam or sgd.")
-        if config.get("lr_scheduler", "none") not in ("none", "step"):
-            raise ValueError("Choose lr_scheduler: none or step.")
+        if config.get("lr_scheduler", "none") not in ("none", "step", "plateau"):
+            raise ValueError("Choose lr_scheduler: none, step, or plateau.")
 
     # 2. Set the PyTorch seed and select the device.
     torch.manual_seed(config["seed"])
@@ -130,6 +130,12 @@ def main():
             "lr_scheduler": config.get("lr_scheduler", "none"),
             "lr_step_size": config.get("lr_step_size", 30),
             "lr_gamma": config.get("lr_gamma", 0.1),
+            "lr_plateau_monitor": "val_loss",
+            "lr_plateau_factor": config.get("lr_plateau_factor", 0.5),
+            "lr_plateau_patience": config.get("lr_plateau_patience", 5),
+            "lr_plateau_threshold": config.get("lr_plateau_threshold", 0.001),
+            "lr_plateau_threshold_mode": "abs",
+            "lr_plateau_min_lr": config.get("lr_plateau_min_lr", 0.000001),
             "learning_rate": config["learning_rate"],
             "weight_decay": config.get("weight_decay", 0.0),
             "seed": config["seed"],

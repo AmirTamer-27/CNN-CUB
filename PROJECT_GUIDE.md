@@ -104,7 +104,7 @@ ResNet-18 supports the existing `analyze-validation` command and Grad-CAM.
 
 ## Cutout experiment
 
-Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_cutout.yaml`.
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling.yaml`.
 The config matches the successful delayed-pooling run (320px, 70 epochs, Adam
 0.001 constant, dropout 0.3, weight decay 0.0001, flip/contrast), adding only Cutout.
 For each training image, `prepare_images` masks one random square with probability
@@ -114,6 +114,21 @@ center and is clipped at image edges, so edge patches can be smaller. Fill is gr
 128/255, matching padding. No bounding boxes or bird-overlap checks are used.
 Validation never uses Cutout. Old configs default to Cutout off; workers stay at 2.
 Cutout settings are logged to MLflow. The learning-rate schedule is unchanged.
+
+## Validation-plateau learning-rate experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_lr_plateau.yaml`.
+This copies the Cutout experiment config but disables Cutout (`cutout_probability: 0.0`)
+and enables `lr_scheduler: plateau`. The Cutout config keeps `lr_scheduler: none`.
+`ReduceLROnPlateau` monitors validation loss after each complete validation epoch;
+it does not monitor training loss or calculate gradients from validation images.
+`lr_plateau_factor: 0.5` halves the rate after more than
+`lr_plateau_patience: 5` consecutive epochs without a qualifying improvement.
+That means a reduction after the sixth non-improving epoch. An improvement must
+beat the running best loss by more than `lr_plateau_threshold: 0.001` (absolute).
+`lr_plateau_min_lr: 0.000001` sets the minimum rate. Improvements reset the counter;
+the scheduler never raises the rate or stops training. Settings and per-epoch
+learning rates are logged to MLflow. All these controls are editable in YAML.
 
 ## Augmentation experiment
 

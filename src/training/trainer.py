@@ -67,6 +67,16 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
             optimizer, step_size=config.get("lr_step_size", 30),
             gamma=config.get("lr_gamma", 0.1),
         )
+    elif config.get("lr_scheduler", "none") == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=config.get("lr_plateau_factor", 0.5),
+            patience=config.get("lr_plateau_patience", 5),
+            threshold=config.get("lr_plateau_threshold", 0.001),
+            threshold_mode="abs",
+            min_lr=config.get("lr_plateau_min_lr", 0.000001),
+        )
 
     for epoch in range(config["epochs"]):
         learning_rate = optimizer.param_groups[0]["lr"]
@@ -95,6 +105,12 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
         )
         # The reduced rate applies to the next epoch, not this epoch's metrics.
         if scheduler is not None:
-            scheduler.step()
+            if config.get("lr_scheduler") == "plateau":
+                scheduler.step(validation_metrics["loss"])
+            else:
+                scheduler.step()
+            next_rate = optimizer.param_groups[0]["lr"]
+            if next_rate < learning_rate:
+                print(f"Learning rate reduced: {learning_rate:g} -> {next_rate:g} (next epoch)")
 
     return history

@@ -10,6 +10,12 @@ epochs: 70
 optimizer: adam
 dropout: 0.3
 learning_rate: 0.001
+# Off for the Cutout-only experiment; set to plateau to enable.
+lr_scheduler: none
+lr_plateau_factor: 0.5
+lr_plateau_patience: 5
+lr_plateau_threshold: 0.001
+lr_plateau_min_lr: 0.000001
 weight_decay: 0.0001
 horizontal_flip_probability: 0.5
 contrast_change_probability: 0.5
