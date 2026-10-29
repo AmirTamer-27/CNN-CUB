@@ -71,15 +71,21 @@ python -m src.cli analyze-validation --config configs/classification_scratch_del
 
 Use the same configuration and model code version that produced the weights.
 The command recreates the validation split, loads the saved state and calls the
-simple loop in `src/evaluation/validation_analysis.py`. It calculates one loss
-and prediction per image, builds a Pandas DataFrame, and prints the 20 classes
-with the highest mean loss, alongside support and recall (%). It also saves
-`outputs/validation_analysis/highest_loss_images.png` (up to 12 highest-loss
-images) and `outputs/validation_analysis/highest_loss_class.png` (up to six
-random validation samples from the class with the highest mean loss). Each image
-shows the true species, predicted species, and loss. Images use the validation
-loader's sequential order and current [0, 1] preprocessing. No overall accuracy
-or first-five preview is printed. No MLflow connection or JSON files are needed.
+loop in `src/evaluation/validation_analysis.py`. It calculates one loss and
+prediction per image, then saves only two three-column grids: original image,
+true-class Grad-CAM overlay, and predicted-class Grad-CAM overlay.
+`outputs/validation_analysis/highest_loss_gradcam.png` shows the 10 highest losses;
+`outputs/validation_analysis/random_predictions_gradcam.png` shows 5 random correct
+and 5 random incorrect predictions, excluding the highest-loss group. If one group
+is too small, the other fills the remaining places when available. Sampling uses seed 42.
+Each original shows the true species, predicted species, and loss. Grad-CAM uses
+the last main-path convolution in block 6 and gradients of the selected raw class
+score. Weights stay fixed and the model remains in evaluation mode. For correct
+predictions, the true and predicted classes coincide, so their maps are identical.
+Maps are normalized separately; compare locations, not intensity across maps.
+An all-zero map is labeled as having no positive response.
+Images use the validation loader's sequential order and current [0, 1] preprocessing.
+No class summary, overall accuracy, MLflow connection or JSON files are needed.
 The two PNG files are replaced on the next analysis run. Pooling changes
 cannot be detected from weights alone, because pooling has no saved parameters.
 
@@ -87,8 +93,8 @@ After running the CLI in Colab/Kaggle, display the grids in a Python cell:
 
 ```python
 from IPython.display import Image, display
-display(Image(filename="outputs/validation_analysis/highest_loss_images.png"))
-display(Image(filename="outputs/validation_analysis/highest_loss_class.png"))
+display(Image(filename="outputs/validation_analysis/highest_loss_gradcam.png"))
+display(Image(filename="outputs/validation_analysis/random_predictions_gradcam.png"))
 ```
 
 ## Training metrics

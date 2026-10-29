@@ -46,10 +46,12 @@ python -m src.cli analyze-validation --config configs/classification_scratch_del
 
 The config and architecture code must match the weights. The command recreates
 the validation split and loads the trained state. The analysis file uses the
-simple per-image loss/prediction loop followed by a Pandas summary. It prints
-classes with highest mean loss, sample counts and recall. Two labeled image grids
-are saved under `outputs/validation_analysis/`: `highest_loss_images.png` and
-`highest_loss_class.png`. Display these files in a notebook after running the CLI.
+per-image loss/prediction loop followed by Grad-CAM for selected images. Two
+three-column grids show the original, true-class overlay and predicted-class overlay:
+`highest_loss_gradcam.png` (10 highest losses) and `random_predictions_gradcam.png`
+(5 random correct + 5 random incorrect, excluding the top-loss group).
+If a group is too small, remaining samples fill the grid when available. Files are
+saved under `outputs/validation_analysis/`. Display them in a notebook after the CLI.
 No weight updates, overall accuracy, first-five preview or MLflow connection are involved.
 
 ## Trying another experiment
