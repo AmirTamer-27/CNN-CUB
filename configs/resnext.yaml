@@ -1,0 +1,41 @@
+
+model: resnext101
+
+train_dataset: Multimodal-Fatima/CUB_train
+
+num_classes: 200
+
+image_size: 320
+batch_size: 32
+num_workers: 2
+
+validation_fraction: 0.2
+seed: 42
+
+# Stage 1: Train classifier only
+stage1_epochs: 5
+stage1_learning_rate: 0.001
+stage1_weight_decay: 0.0001
+
+# Stage 2: Fine-tune layer4 and classifier
+stage2_epochs: 30
+layer4_learning_rate: 0.00001
+classifier_learning_rate: 0.0001
+stage2_weight_decay: 0.001
+
+# Scheduler
+scheduler_patience: 2
+minimum_learning_rate: 0.0000001
+
+# Early stopping
+early_stopping_patience: 6
+early_stopping_min_delta: 0.0001
+
+# Model
+dropout: 0.7
+
+# Output
+checkpoint_dir: outputs/checkpoints
+
+# Experiment
+run_name: resnext101_transfer_learning
