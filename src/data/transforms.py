@@ -2,6 +2,7 @@
 from PIL import Image, ImageOps
 import torch
 from torchvision import transforms
+from torchvision.transforms import v2 as transforms_v2
 
 def resize_and_pad(image, size=320):
     # LANCZOS resamples pixels while resizing; padding then fills unused space.
@@ -96,8 +97,8 @@ def get_train_transforms():
             brightness=0.2,
             contrast=0.2
         ),
-        transforms.ToImage(),
-        transforms.ToDtype(
+        transforms_v2.ToImage(),
+        transforms_v2.ToDtype(
             torch.float32,
             scale=True
         ),
@@ -111,8 +112,8 @@ def get_train_transforms():
 def get_val_transforms():
 
     return transforms.Compose([
-        transforms.ToImage(),
-        transforms.ToDtype(
+        transforms_v2.ToImage(),
+        transforms_v2.ToDtype(
             torch.float32,
             scale=True
         ),
