@@ -136,3 +136,19 @@ Run with `--config configs/classification_scratch_augmented.yaml` for independen
 50% horizontal-flip and 50% contrast-change probabilities on each training image,
 after resizing/padding. Contrast strength 0.2 uses factors between 0.8 and 1.2.
 Validation remains unaugmented. The baseline config disables both operations.
+
+## Combined-loss experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_combined_loss.yaml`.
+This uses the best Cutout + plateau-scheduler settings for 70 epochs: 320px,
+Adam 0.001, weight decay 0.0001, dropout 0.3, batch size 32 and the same seeded split.
+`loss: combined` enables cross-entropy + `cosine_weight` times cosine loss on
+the same 200 logits, without adding another classifier. The initial weight 1.0
+is an experimental choice, not the published two-classifier method.
+`src/training/losses.py` defines the objective. One backward pass updates the model.
+
+For comparable charts, `train_loss` and `val_loss` still mean cross-entropy;
+the scheduler continues to monitor validation cross-entropy. Combined runs also
+print and log `train_cosine_loss`, `val_cosine_loss`, `train_total_loss`, and
+`val_total_loss` to MLflow. No JSON files are written. Existing configs default
+to cross-entropy alone. Setting `cosine_weight: 0.0` also gives CE-only training.

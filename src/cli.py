@@ -6,6 +6,7 @@ python -m src.cli analyze-validation --config PATH --weights PATH
 """
 
 import argparse
+import math
 
 import torch
 from torch import nn
@@ -72,6 +73,12 @@ def main():
             raise ValueError(
                 "Choose lr_scheduler: none, step, or plateau."
             )
+
+        if config.get("loss", "cross_entropy") not in ("cross_entropy", "combined"):
+            raise ValueError("Choose loss: cross_entropy or combined.")
+        cosine_weight = config.get("cosine_weight", 1.0)
+        if not math.isfinite(cosine_weight) or cosine_weight < 0:
+            raise ValueError("cosine_weight must be finite and nonnegative.")
 
     # 2. Set the PyTorch seed and select the device.
     torch.manual_seed(config["seed"])
@@ -211,6 +218,11 @@ def main():
                 "batch_size": config["batch_size"],
                 "epochs": config["epochs"],
                 "optimizer": config["optimizer"],
+                "loss": config.get("loss", "cross_entropy"),
+                "cosine_weight": (
+                    config.get("cosine_weight", 1.0)
+                    if config.get("loss", "cross_entropy") == "combined" else 0.0
+                ),
                 "momentum": config.get("momentum", 0.0),
                 "pretrained": False,
                 "lr_scheduler": config.get("lr_scheduler", "none"),
@@ -254,8 +266,15 @@ def main():
 
             # Existing teammate metric logging.
             for result in history:
+                # Preserve CE metrics and record combined-loss components separately.
+                component_metrics = {}
+                for split, prefix in (("train", "train"), ("validation", "val")):
+                    for name in ("cosine_loss", "total_loss"):
+                        if name in result[split]:
+                            component_metrics[f"{prefix}_{name}"] = result[split][name]
                 mlflow.log_metrics(
                     {
+                        **component_metrics,
                         "train_loss": result["train"]["loss"],
                         "train_accuracy": result["train"]["accuracy"],
                         "train_macro_recall": result["train"]["macro_recall"],

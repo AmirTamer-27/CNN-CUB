@@ -3,14 +3,18 @@ import torch
 from tqdm.auto import tqdm
 
 from src.evaluation.metrics import classification_metrics
+from src.training.losses import combined_loss
 
 
-def train_one_epoch(model, loader, criterion, optimizer, device, num_classes):
+def train_one_epoch(model, loader, criterion, optimizer, device, num_classes,
+                    cosine_weight=0.0):
     model.train()
     total_loss = 0.0
     total_correct = 0
     all_labels = []
     all_predictions = []
+    total_objective = 0.0
+    total_cosine = 0.0
 
     for batch in tqdm(loader, desc="Training"):
         images = batch["image"].to(device, non_blocking=device.type == "cuda")
@@ -18,27 +22,39 @@ def train_one_epoch(model, loader, criterion, optimizer, device, num_classes):
 
         optimizer.zero_grad()
         scores = model(images)
-        loss = criterion(scores, labels)
+        if cosine_weight > 0:
+            loss, ce_loss, cosine_loss = combined_loss(scores, labels, cosine_weight)
+            total_objective += loss.item() * labels.size(0)
+            total_cosine += cosine_loss.item() * labels.size(0)
+        else:
+            ce_loss = loss = criterion(scores, labels)
         loss.backward()
         optimizer.step()
 
         predictions = scores.argmax(dim=1)
-        total_loss += loss.item() * labels.size(0)
+        # Keep "loss" as CE for comparison with earlier experiments.
+        total_loss += ce_loss.item() * labels.size(0)
         total_correct += (predictions == labels).sum().item()
         all_labels.extend(labels.detach().cpu().tolist())
         all_predictions.extend(predictions.detach().cpu().tolist())
 
-    return classification_metrics(
+    metrics = classification_metrics(
         total_loss, total_correct, all_labels, all_predictions, num_classes,
     )
+    if cosine_weight > 0:
+        metrics["cosine_loss"] = total_cosine / len(all_labels)
+        metrics["total_loss"] = total_objective / len(all_labels)
+    return metrics
 
 
-def validate(model, loader, criterion, device, num_classes):
+def validate(model, loader, criterion, device, num_classes, cosine_weight=0.0):
     model.eval()
     total_loss = 0.0
     total_correct = 0
     all_labels = []
     all_predictions = []
+    total_objective = 0.0
+    total_cosine = 0.0
 
     # Validation measures performance without calculating gradients or updating weights.
     with torch.no_grad():
@@ -46,7 +62,12 @@ def validate(model, loader, criterion, device, num_classes):
             images = batch["image"].to(device, non_blocking=device.type == "cuda")
             labels = batch["label"].to(device, non_blocking=device.type == "cuda")
             scores = model(images)
-            loss = criterion(scores, labels)
+            if cosine_weight > 0:
+                objective, loss, cosine_loss = combined_loss(scores, labels, cosine_weight)
+                total_objective += objective.item() * labels.size(0)
+                total_cosine += cosine_loss.item() * labels.size(0)
+            else:
+                loss = criterion(scores, labels)
 
             predictions = scores.argmax(dim=1)
             total_loss += loss.item() * labels.size(0)
@@ -54,13 +75,21 @@ def validate(model, loader, criterion, device, num_classes):
             all_labels.extend(labels.cpu().tolist())
             all_predictions.extend(predictions.cpu().tolist())
 
-    return classification_metrics(
+    metrics = classification_metrics(
         total_loss, total_correct, all_labels, all_predictions, num_classes,
     )
+    if cosine_weight > 0:
+        metrics["cosine_loss"] = total_cosine / len(all_labels)
+        metrics["total_loss"] = total_objective / len(all_labels)
+    return metrics
 
 
 def fit(model, train_loader, validation_loader, criterion, optimizer, device, config):
     history = []
+    cosine_weight = (
+        config.get("cosine_weight", 1.0)
+        if config.get("loss", "cross_entropy") == "combined" else 0.0
+    )
     scheduler = None
     if config.get("lr_scheduler", "none") == "step":
         scheduler = torch.optim.lr_scheduler.StepLR(
@@ -83,9 +112,11 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
         print(f"Epoch {epoch + 1}/{config['epochs']} | Learning rate: {learning_rate:g}")
         train_metrics = train_one_epoch(
             model, train_loader, criterion, optimizer, device, config["num_classes"],
+            cosine_weight=cosine_weight,
         )
         validation_metrics = validate(
             model, validation_loader, criterion, device, config["num_classes"],
+            cosine_weight=cosine_weight,
         )
 
         # Keep measurements in memory only; no JSON files are written.
@@ -103,6 +134,13 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
             f"Val accuracy: {validation_metrics['accuracy']:.2f}% | "
             f"Val macro recall: {validation_metrics['macro_recall']:.2f}%"
         )
+        if cosine_weight > 0:
+            print(
+                f"Train cosine loss: {train_metrics['cosine_loss']:.4f} | "
+                f"Train total loss: {train_metrics['total_loss']:.4f} | "
+                f"Val cosine loss: {validation_metrics['cosine_loss']:.4f} | "
+                f"Val total loss: {validation_metrics['total_loss']:.4f}"
+            )
         # The reduced rate applies to the next epoch, not this epoch's metrics.
         if scheduler is not None:
             if config.get("lr_scheduler") == "plateau":
