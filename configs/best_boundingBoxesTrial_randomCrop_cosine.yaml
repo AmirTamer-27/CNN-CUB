@@ -39,7 +39,7 @@ bbox_annotation_dir: src/data/CUB_200_2011
 
 # Training only: retain 60-100% of the bbox-cropped image area.
 # Preserve its aspect ratio, then use the existing resize/pad.
-random_crop_probability: 1.0
+random_crop_probability: 0.0
 random_crop_scale: [0.6, 1.0]
 
 # One cosine decay over 70 epochs, updated after each epoch; no restarts.
