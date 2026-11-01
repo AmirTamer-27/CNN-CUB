@@ -2,6 +2,7 @@
 import torch
 from torch.utils.data import DataLoader
 from src.data.transforms import prepare_images
+from src.data.bounding_boxes import crop_dataset
 
 
 def make_loaders(config):
@@ -9,6 +10,10 @@ def make_loaders(config):
     from datasets import load_dataset
 
     full_train = load_dataset(config["train_dataset"], split="train")
+    if config.get("use_bounding_boxes", False):
+        full_train = crop_dataset(
+            full_train, config.get("bbox_annotation_dir", "data/CUB_200_2011"),
+        )
     split = full_train.train_test_split(
         test_size=config["validation_fraction"],
         stratify_by_column="label",

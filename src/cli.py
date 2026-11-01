@@ -247,6 +247,8 @@ def main():
                 "seed": config["seed"],
                 "validation_fraction": config["validation_fraction"],
                 "train_dataset": config["train_dataset"],
+                "use_bounding_boxes": config.get("use_bounding_boxes", False),
+                "bbox_annotation_dir": config.get("bbox_annotation_dir", "data/CUB_200_2011"),
             })
 
             history = fit(

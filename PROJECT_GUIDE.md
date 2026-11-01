@@ -152,3 +152,27 @@ the scheduler continues to monitor validation cross-entropy. Combined runs also
 print and log `train_cosine_loss`, `val_cosine_loss`, `train_total_loss`, and
 `val_total_loss` to MLflow. No JSON files are written. Existing configs default
 to cross-entropy alone. Setting `cosine_weight: 0.0` also gives CE-only training.
+
+## Bounding-box crop experiment
+
+Place the original CUB annotation files at `data/CUB_200_2011/images.txt`
+and `data/CUB_200_2011/bounding_boxes.txt` (exact filenames). No image download
+is needed: images still come from Hugging Face. This data directory is ignored
+by Git, so copy the two files into the same location in Kaggle/Colab too.
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_bbox.yaml`.
+This starts a 70-epoch experiment using the best CE + Cutout + plateau settings,
+adding only bird crops. `use_bounding_boxes: false` disables cropping; old configs
+default to false. `bbox_annotation_dir` is relative to the project root when
+running commands there, or can be an absolute path.
+
+`src/data/bounding_boxes.py` joins original image IDs to box annotations, then
+matches Hugging Face samples by filename. It rejects missing boxes or ambiguous
+matches rather than dropping samples. `dataset.py` crops the dataset once before
+the unchanged seeded split, preserving row order and labels. Both training and
+validation therefore use crops of the same photographs as before. There is no
+margin. Fractional boundaries round outward to pixels and clip to image edges.
+Existing resize/pad still scales each crop up or down to the configured size.
+Cropping is currently connected to scratch-model loaders; ResNeXt uses its separate
+transfer loaders. Use the matching crop config for saved-weight validation analysis.
+MLflow records whether cropping is enabled and the annotation directory.
