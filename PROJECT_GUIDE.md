@@ -176,3 +176,18 @@ Existing resize/pad still scales each crop up or down to the configured size.
 Cropping is currently connected to scratch-model loaders; ResNeXt uses its separate
 transfer loaders. Use the matching crop config for saved-weight validation analysis.
 MLflow records whether cropping is enabled and the annotation directory.
+
+## Bounding boxes plus random cropping
+
+Run `python -m src.cli train --config configs/best_boundingBoxesTrial_randomCrop.yaml`.
+This copies `best_boundingBoxesTrial.yaml` (including 70 epochs) and adds only
+training-time random cropping. `random_crop_probability: 1.0` samples a fresh
+crop for every training image access; set it to 0.0 to disable it.
+`random_crop_scale: [0.6, 1.0]` controls retained area relative to the bbox crop,
+not width/height fractions. Crops preserve the source aspect ratio up to pixel
+rounding, then go through the existing LANCZOS resize and gray padding.
+The order is bbox crop -> random crop -> resize/pad -> flip/contrast -> tensor -> Cutout.
+Validation uses the entire bbox crop with deterministic resize/pad, without random
+cropping. No bbox margin is added. The two DataLoader workers and all other
+settings stay unchanged. Old configs default to random cropping off. These
+settings are logged to MLflow. This option applies to scratch-model data loaders.

@@ -31,6 +31,8 @@ def make_loaders(config):
             cutout_probability=config.get("cutout_probability", 0.0),
             cutout_min_fraction=config.get("cutout_min_fraction", 0.25),
             cutout_max_fraction=config.get("cutout_max_fraction", 0.30),
+            random_crop_probability=config.get("random_crop_probability", 0.0),
+            random_crop_scale=config.get("random_crop_scale", (0.6, 1.0)),
         )
 
     def prepare_validation(batch):

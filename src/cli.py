@@ -248,6 +248,8 @@ def main():
                 "validation_fraction": config["validation_fraction"],
                 "train_dataset": config["train_dataset"],
                 "use_bounding_boxes": config.get("use_bounding_boxes", False),
+                "random_crop_probability": config.get("random_crop_probability", 0.0),
+                "random_crop_scale": str(config.get("random_crop_scale", [0.6, 1.0])),
                 "bbox_annotation_dir": config.get("bbox_annotation_dir", "data/CUB_200_2011"),
             })
 
