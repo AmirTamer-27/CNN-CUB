@@ -1,4 +1,4 @@
-run_name: best_boundingBoxesTrial_randomCrop_cosine
+run_name: best_boundingBoxesTrial_cosine
 model: bird_cnn_delayed_pooling
 num_classes: 200
 dropout: 0.3
