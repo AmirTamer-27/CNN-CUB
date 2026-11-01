@@ -1,0 +1,48 @@
+run_name: best_boundingBoxesTrial_randomCrop_cosine
+model: bird_cnn_delayed_pooling
+num_classes: 200
+dropout: 0.3
+image_size: 320
+horizontal_flip_probability: 0.5
+contrast_change_probability: 0.5
+contrast_strength: 0.2
+brightness_change_probability: 0.0
+brightness_strength: 0.2
+cutout_probability: 0.5
+cutout_min_fraction: 0.25
+cutout_max_fraction: 0.3
+cutout_fill: 0.5019607843137255
+batch_size: 32
+epochs: 70
+optimizer: adam
+momentum: 0.0
+pretrained: false
+lr_scheduler: cosine
+lr_step_size: 30
+lr_gamma: 0.1
+lr_plateau_monitor: val_loss
+lr_plateau_factor: 0.5
+lr_plateau_patience: 5
+lr_plateau_threshold: 0.001
+lr_plateau_threshold_mode: abs
+lr_plateau_min_lr: 0.000001
+learning_rate: 0.001
+weight_decay: 0.0001
+seed: 42
+validation_fraction: 0.2
+train_dataset: Multimodal-Fatima/CUB_train
+
+# Use bird crops without a margin; keep the same cross-entropy objective.
+loss: cross_entropy
+use_bounding_boxes: true
+bbox_annotation_dir: src/data/CUB_200_2011
+
+# Training only: retain 60-100% of the bbox-cropped image area.
+# Preserve its aspect ratio, then use the existing resize/pad.
+random_crop_probability: 1.0
+random_crop_scale: [0.6, 1.0]
+
+# One cosine decay over 70 epochs, updated after each epoch; no restarts.
+# Existing plateau/step settings above are inactive for this experiment.
+lr_cosine_t_max: 70
+lr_cosine_min_lr: 0.000001

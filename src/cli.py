@@ -68,11 +68,18 @@ def main():
             raise ValueError("Choose optimizer: adam or sgd.")
 
         if config.get("lr_scheduler", "none") not in (
-            "none", "step", "plateau"
+            "none", "step", "plateau", "cosine"
         ):
             raise ValueError(
-                "Choose lr_scheduler: none, step, or plateau."
+                "Choose lr_scheduler: none, step, plateau, or cosine."
             )
+        if config.get("lr_scheduler") == "cosine":
+            t_max = config.get("lr_cosine_t_max", config["epochs"])
+            if not isinstance(t_max, int) or t_max < max(1, config["epochs"]):
+                raise ValueError("lr_cosine_t_max must be an integer >= epochs to avoid an LR upswing.")
+            min_lr = config.get("lr_cosine_min_lr", 0.000001)
+            if not math.isfinite(min_lr) or not 0 <= min_lr <= config["learning_rate"]:
+                raise ValueError("lr_cosine_min_lr must be between 0 and learning_rate.")
 
         if config.get("loss", "cross_entropy") not in ("cross_entropy", "combined"):
             raise ValueError("Choose loss: cross_entropy or combined.")
@@ -226,6 +233,8 @@ def main():
                 "momentum": config.get("momentum", 0.0),
                 "pretrained": False,
                 "lr_scheduler": config.get("lr_scheduler", "none"),
+                "lr_cosine_t_max": config.get("lr_cosine_t_max", config["epochs"]),
+                "lr_cosine_min_lr": config.get("lr_cosine_min_lr", 0.000001),
                 "lr_step_size": config.get("lr_step_size", 30),
                 "lr_gamma": config.get("lr_gamma", 0.1),
                 "lr_plateau_monitor": "val_loss",

@@ -191,3 +191,18 @@ Validation uses the entire bbox crop with deterministic resize/pad, without rand
 cropping. No bbox margin is added. The two DataLoader workers and all other
 settings stay unchanged. Old configs default to random cropping off. These
 settings are logged to MLflow. This option applies to scratch-model data loaders.
+
+## Cosine learning-rate experiment
+
+Run `python -m src.cli train --config configs/best_boundingBoxesTrial_randomCrop_cosine.yaml`.
+This copies the bbox + random-crop trial and changes only the scheduler.
+`lr_scheduler: cosine` selects PyTorch `CosineAnnealingLR`, with
+`lr_cosine_t_max: 70` and `lr_cosine_min_lr: 0.000001`. Adam starts at 0.001.
+The scheduler steps once after each epoch without reading validation loss.
+There are no restarts: LR falls smoothly over the configured duration.
+Epoch 1 uses 0.001; the floor is reached after epoch 70's update, so the
+last training epoch uses a rate slightly above the floor. MLflow logs the
+rate actually used in each epoch and both cosine settings. Set T_max at least
+as large as the epoch budget; the CLI rejects shorter durations to avoid an
+LR upswing. Existing plateau/step config fields are inactive in cosine mode.
+All old scheduler modes, model settings, augmentation, and two workers are retained.

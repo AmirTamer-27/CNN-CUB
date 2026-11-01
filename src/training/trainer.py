@@ -106,6 +106,12 @@ def fit(model, train_loader, validation_loader, criterion, optimizer, device, co
             threshold_mode="abs",
             min_lr=config.get("lr_plateau_min_lr", 0.000001),
         )
+    elif config.get("lr_scheduler", "none") == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=config.get("lr_cosine_t_max", config["epochs"]),
+            eta_min=config.get("lr_cosine_min_lr", 0.000001),
+        )
 
     for epoch in range(config["epochs"]):
         learning_rate = optimizer.param_groups[0]["lr"]
