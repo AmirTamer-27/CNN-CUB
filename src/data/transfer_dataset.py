@@ -1,24 +1,29 @@
-"""Data loaders for transfer-learning experiments."""
+"""Data loaders for transfer-learning experiments with bboxes and zero augmentations."""
 
 import torch
 from torch.utils.data import DataLoader
+from datasets import load_dataset
 
 from src.data.transforms import (
-    get_train_transforms,
     get_val_transforms,
     resize_and_pad,
 )
+from src.data.bounding_boxes import crop_dataset
 
 
 def make_transfer_loaders(config):
-    """Create train and validation loaders for transfer learning."""
-
-    from datasets import load_dataset
+    """Create train and validation loaders with bounding boxes and no data augmentation."""
 
     full_train = load_dataset(
         config["train_dataset"],
         split="train",
     )
+
+    # Apply official CUB bounding box crops if configured
+    if config.get("use_bounding_boxes", False):
+        annotation_dir = config.get("bbox_annotation_dir", "data/CUB_200_2011")
+        print(f"Applying CUB ground-truth bounding box crops from: {annotation_dir}")
+        full_train = crop_dataset(full_train, annotation_dir)
 
     split = full_train.train_test_split(
         test_size=config["validation_fraction"],
@@ -26,18 +31,18 @@ def make_transfer_loaders(config):
         seed=config["seed"],
     )
 
-    train_transform = get_train_transforms()
-    val_transform = get_val_transforms()
+    # Use val transform (resize/pad + tensor + normalize) for both train and validation
+    base_transform = get_val_transforms()
 
-    def prepare_train(batch):
+    def prepare_clean_batch(batch):
         images = []
-
         for image in batch["image"]:
+            # Resize and pad to target size (e.g., 384) using LANCZOS
             image = resize_and_pad(
                 image,
                 size=config["image_size"],
             )
-            image = train_transform(image)
+            image = base_transform(image)
             images.append(image)
 
         return {
@@ -45,34 +50,16 @@ def make_transfer_loaders(config):
             "label": batch["label"],
         }
 
-    def prepare_validation(batch):
-        images = []
+    train = split["train"].with_transform(prepare_clean_batch)
+    validation = split["test"].with_transform(prepare_clean_batch)
 
-        for image in batch["image"]:
-            image = resize_and_pad(
-                image,
-                size=config["image_size"],
-            )
-            image = val_transform(image)
-            images.append(image)
-
-        return {
-            "image": images,
-            "label": batch["label"],
-        }
-
-    train = split["train"].with_transform(prepare_train)
-    validation = split["test"].with_transform(prepare_validation)
-
-    generator = torch.Generator().manual_seed(
-        config["seed"]
-    )
+    generator = torch.Generator().manual_seed(config["seed"])
 
     train_loader = DataLoader(
         train,
         batch_size=config["batch_size"],
         shuffle=True,
-        num_workers=config["num_workers"],
+        num_workers=config.get("num_workers", 2),
         generator=generator,
     )
 
@@ -80,7 +67,7 @@ def make_transfer_loaders(config):
         validation,
         batch_size=config["batch_size"],
         shuffle=False,
-        num_workers=config["num_workers"],
+        num_workers=config.get("num_workers", 2),
     )
 
     class_names = full_train.features["label"].names
