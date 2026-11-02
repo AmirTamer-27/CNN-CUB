@@ -13,7 +13,7 @@ cutout_min_fraction: 0.25
 cutout_max_fraction: 0.3
 cutout_fill: 0.5019607843137255
 batch_size: 32
-epochs: 70
+epochs: 100
 optimizer: adam
 momentum: 0.0
 pretrained: false
