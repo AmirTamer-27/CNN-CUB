@@ -206,3 +206,19 @@ rate actually used in each epoch and both cosine settings. Set T_max at least
 as large as the epoch budget; the CLI rejects shorter durations to avoid an
 LR upswing. Existing plateau/step config fields are inactive in cosine mode.
 All old scheduler modes, model settings, augmentation, and two workers are retained.
+
+## Named bounding-box baselines and convolutional dropout
+
+`configs/bestBounding.yaml` preserves the 70-epoch Adam bbox baseline.
+`configs/bestBounding_RandomCrop.yaml` preserves its 70-epoch random-crop variant.
+Both explicitly set `dropout2d: 0.0`; the former disables random cropping.
+`configs/bestBounding_RandomCrop_Dropout2D.yaml` uses the same Adam, weight decay
+0.0001, augmentation and plateau settings, adds `dropout2d: 0.1` and runs 100 epochs.
+The run names match these filenames. Earlier config files are retained.
+
+For the delayed-pooling model, Dropout2d is applied after each of the six complete
+blocks (after max pooling where present). It zeros entire per-image feature maps
+during training and is disabled by model.eval(). It adds no parameters or changes
+to map sizes; existing ordinary dropout 0.3 before the FC remains. Old configs
+default to convolutional dropout off. CLI construction and saved-weight analysis
+read this setting, and MLflow logs it. No other model enables this option.

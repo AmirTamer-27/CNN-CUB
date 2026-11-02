@@ -62,6 +62,12 @@ def main():
             f"Unsupported model. Choose one of: {supported_models}"
         )
 
+    dropout2d = config.get("dropout2d", 0.0)
+    if not math.isfinite(dropout2d) or not 0 <= dropout2d <= 1:
+        raise ValueError("dropout2d must be between 0 and 1.")
+    if dropout2d > 0 and config["model"] != "bird_cnn_delayed_pooling":
+        raise ValueError("dropout2d is supported only for bird_cnn_delayed_pooling.")
+
     # Validate optimizer and scheduler only when training scratch models.
     if args.command == "train" and config["model"] != "resnext101":
         if config["optimizer"] not in ("adam", "adamw", "sgd"):
@@ -116,9 +122,13 @@ def main():
 
         model_class = model_classes[config["model"]]
 
+        model_options = {}
+        if config["model"] == "bird_cnn_delayed_pooling":
+            model_options["dropout2d"] = dropout2d
         model = model_class(
             num_classes=config["num_classes"],
             dropout=config.get("dropout", 0.0),
+            **model_options,
         ).to(device)
 
     # 4. Prepare the appropriate data loaders.
@@ -202,6 +212,7 @@ def main():
             mlflow.log_params({
                 "model": config["model"],
                 "dropout": config.get("dropout", 0.0),
+                "dropout2d": dropout2d,
                 "image_size": config["image_size"],
                 "horizontal_flip_probability": config.get(
                     "horizontal_flip_probability", 0.0

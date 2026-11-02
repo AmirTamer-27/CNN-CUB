@@ -3,7 +3,7 @@ from torch import nn
 
 
 class BirdCNNDelayedPooling(nn.Module):
-    def __init__(self, num_classes=200, dropout=0.0):
+    def __init__(self, num_classes=200, dropout=0.0, dropout2d=0.0):
         super().__init__()
         self.block1 = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
@@ -61,16 +61,17 @@ class BirdCNNDelayedPooling(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten(start_dim=1)
         self.dropout = nn.Dropout(p=dropout)
+        self.dropout2d = nn.Dropout2d(p=dropout2d)
         self.fc = nn.Linear(in_features=512, out_features=num_classes)
 
 
     def forward(self, images):
-        x = self.block1(images)
-        x = self.block2(x)
-        x = self.block3(x)
-        x = self.block4(x)
-        x = self.block5(x)
-        x = self.block6(x)
+        x = self.dropout2d(self.block1(images))
+        x = self.dropout2d(self.block2(x))
+        x = self.dropout2d(self.block3(x))
+        x = self.dropout2d(self.block4(x))
+        x = self.dropout2d(self.block5(x))
+        x = self.dropout2d(self.block6(x))
         x = self.global_pool(x)
         x = self.dropout(x)
         x = self.flatten(x)
