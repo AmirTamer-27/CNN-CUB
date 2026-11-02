@@ -4,6 +4,16 @@ import torch
 from torchvision import transforms
 from torchvision.transforms import v2 as transforms_v2
 
+
+def random_crop_image(image, scale):
+    # Sample crop area while retaining the source image's aspect ratio.
+    ratio = image.width / image.height
+    top, left, height, width = transforms.RandomResizedCrop.get_params(
+        image, scale=scale, ratio=(ratio, ratio),
+    )
+    return image.crop((left, top, left + width, top + height))
+
+
 def resize_and_pad(image, size=320):
     # LANCZOS resamples pixels while resizing; padding then fills unused space.
     return ImageOps.pad(
@@ -26,12 +36,18 @@ def prepare_images(
     cutout_probability=0.0,
     cutout_min_fraction=0.25,
     cutout_max_fraction=0.30,
+    random_crop_probability=0.0,
+    random_crop_scale=(0.6, 1.0),
 ):
     """Resize/pad, augment, convert to tensors, and optionally apply one Cutout."""
     if not 0 <= cutout_probability <= 1:
         raise ValueError("cutout_probability must be between 0 and 1.")
     if not 0 < cutout_min_fraction <= cutout_max_fraction <= 1:
         raise ValueError("Cutout side fractions must satisfy 0 < min <= max <= 1.")
+    if not 0 <= random_crop_probability <= 1:
+        raise ValueError("random_crop_probability must be between 0 and 1.")
+    if len(random_crop_scale) != 2 or not 0 < random_crop_scale[0] <= random_crop_scale[1] <= 1:
+        raise ValueError("random_crop_scale must satisfy 0 < min <= max <= 1.")
     horizontal_flip = transforms.RandomHorizontalFlip(
         p=flip_probability
     )
@@ -49,6 +65,10 @@ def prepare_images(
     prepared_images = []
 
     for image in batch["image"]:
+        # Training samples a new crop on each access, before resize/pad.
+        # Disabled configs consume no extra random draws.
+        if random_crop_probability > 0 and torch.rand(()).item() < random_crop_probability:
+            image = random_crop_image(image, random_crop_scale)
         image = resize_and_pad(image, size=image_size)
 
         # Each operation makes its own random decision for this image.

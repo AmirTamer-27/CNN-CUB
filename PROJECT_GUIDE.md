@@ -136,3 +136,73 @@ Run with `--config configs/classification_scratch_augmented.yaml` for independen
 50% horizontal-flip and 50% contrast-change probabilities on each training image,
 after resizing/padding. Contrast strength 0.2 uses factors between 0.8 and 1.2.
 Validation remains unaugmented. The baseline config disables both operations.
+
+## Combined-loss experiment
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_combined_loss.yaml`.
+This uses the best Cutout + plateau-scheduler settings for 70 epochs: 320px,
+Adam 0.001, weight decay 0.0001, dropout 0.3, batch size 32 and the same seeded split.
+`loss: combined` enables cross-entropy + `cosine_weight` times cosine loss on
+the same 200 logits, without adding another classifier. The initial weight 1.0
+is an experimental choice, not the published two-classifier method.
+`src/training/losses.py` defines the objective. One backward pass updates the model.
+
+For comparable charts, `train_loss` and `val_loss` still mean cross-entropy;
+the scheduler continues to monitor validation cross-entropy. Combined runs also
+print and log `train_cosine_loss`, `val_cosine_loss`, `train_total_loss`, and
+`val_total_loss` to MLflow. No JSON files are written. Existing configs default
+to cross-entropy alone. Setting `cosine_weight: 0.0` also gives CE-only training.
+
+## Bounding-box crop experiment
+
+Place the original CUB annotation files at `data/CUB_200_2011/images.txt`
+and `data/CUB_200_2011/bounding_boxes.txt` (exact filenames). No image download
+is needed: images still come from Hugging Face. This data directory is ignored
+by Git, so copy the two files into the same location in Kaggle/Colab too.
+
+Run `python -m src.cli train --config configs/classification_scratch_delayed_pooling_bbox.yaml`.
+This starts a 70-epoch experiment using the best CE + Cutout + plateau settings,
+adding only bird crops. `use_bounding_boxes: false` disables cropping; old configs
+default to false. `bbox_annotation_dir` is relative to the project root when
+running commands there, or can be an absolute path.
+
+`src/data/bounding_boxes.py` joins original image IDs to box annotations, then
+matches Hugging Face samples by filename. It rejects missing boxes or ambiguous
+matches rather than dropping samples. `dataset.py` crops the dataset once before
+the unchanged seeded split, preserving row order and labels. Both training and
+validation therefore use crops of the same photographs as before. There is no
+margin. Fractional boundaries round outward to pixels and clip to image edges.
+Existing resize/pad still scales each crop up or down to the configured size.
+Cropping is currently connected to scratch-model loaders; ResNeXt uses its separate
+transfer loaders. Use the matching crop config for saved-weight validation analysis.
+MLflow records whether cropping is enabled and the annotation directory.
+
+## Bounding boxes plus random cropping
+
+Run `python -m src.cli train --config configs/best_boundingBoxesTrial_randomCrop.yaml`.
+This copies `best_boundingBoxesTrial.yaml` (including 70 epochs) and adds only
+training-time random cropping. `random_crop_probability: 1.0` samples a fresh
+crop for every training image access; set it to 0.0 to disable it.
+`random_crop_scale: [0.6, 1.0]` controls retained area relative to the bbox crop,
+not width/height fractions. Crops preserve the source aspect ratio up to pixel
+rounding, then go through the existing LANCZOS resize and gray padding.
+The order is bbox crop -> random crop -> resize/pad -> flip/contrast -> tensor -> Cutout.
+Validation uses the entire bbox crop with deterministic resize/pad, without random
+cropping. No bbox margin is added. The two DataLoader workers and all other
+settings stay unchanged. Old configs default to random cropping off. These
+settings are logged to MLflow. This option applies to scratch-model data loaders.
+
+## Cosine learning-rate experiment
+
+Run `python -m src.cli train --config configs/best_boundingBoxesTrial_randomCrop_cosine.yaml`.
+This copies the bbox + random-crop trial and changes only the scheduler.
+`lr_scheduler: cosine` selects PyTorch `CosineAnnealingLR`, with
+`lr_cosine_t_max: 70` and `lr_cosine_min_lr: 0.000001`. Adam starts at 0.001.
+The scheduler steps once after each epoch without reading validation loss.
+There are no restarts: LR falls smoothly over the configured duration.
+Epoch 1 uses 0.001; the floor is reached after epoch 70's update, so the
+last training epoch uses a rate slightly above the floor. MLflow logs the
+rate actually used in each epoch and both cosine settings. Set T_max at least
+as large as the epoch budget; the CLI rejects shorter durations to avoid an
+LR upswing. Existing plateau/step config fields are inactive in cosine mode.
+All old scheduler modes, model settings, augmentation, and two workers are retained.

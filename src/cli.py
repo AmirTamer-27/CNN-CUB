@@ -6,6 +6,7 @@ python -m src.cli analyze-validation --config PATH --weights PATH
 """
 
 import argparse
+import math
 
 import torch
 from torch import nn
@@ -63,15 +64,28 @@ def main():
 
     # Validate optimizer and scheduler only when training scratch models.
     if args.command == "train" and config["model"] != "resnext101":
-        if config["optimizer"] not in ("adam", "sgd"):
-            raise ValueError("Choose optimizer: adam or sgd.")
+        if config["optimizer"] not in ("adam", "adamw", "sgd"):
+            raise ValueError("Choose optimizer: adam, adamw, or sgd.")
 
         if config.get("lr_scheduler", "none") not in (
-            "none", "step", "plateau"
+            "none", "step", "plateau", "cosine"
         ):
             raise ValueError(
-                "Choose lr_scheduler: none, step, or plateau."
+                "Choose lr_scheduler: none, step, plateau, or cosine."
             )
+        if config.get("lr_scheduler") == "cosine":
+            t_max = config.get("lr_cosine_t_max", config["epochs"])
+            if not isinstance(t_max, int) or t_max < max(1, config["epochs"]):
+                raise ValueError("lr_cosine_t_max must be an integer >= epochs to avoid an LR upswing.")
+            min_lr = config.get("lr_cosine_min_lr", 0.000001)
+            if not math.isfinite(min_lr) or not 0 <= min_lr <= config["learning_rate"]:
+                raise ValueError("lr_cosine_min_lr must be between 0 and learning_rate.")
+
+        if config.get("loss", "cross_entropy") not in ("cross_entropy", "combined"):
+            raise ValueError("Choose loss: cross_entropy or combined.")
+        cosine_weight = config.get("cosine_weight", 1.0)
+        if not math.isfinite(cosine_weight) or cosine_weight < 0:
+            raise ValueError("cosine_weight must be finite and nonnegative.")
 
     # 2. Set the PyTorch seed and select the device.
     torch.manual_seed(config["seed"])
@@ -170,6 +184,12 @@ def main():
                     lr=config["learning_rate"],
                     weight_decay=config.get("weight_decay", 0.0),
                 )
+            elif config["optimizer"] == "adamw":
+                optimizer = torch.optim.AdamW(
+                    model.parameters(),
+                    lr=config["learning_rate"],
+                    weight_decay=config.get("weight_decay", 0.0),
+                )
             else:
                 optimizer = torch.optim.SGD(
                     model.parameters(),
@@ -211,9 +231,16 @@ def main():
                 "batch_size": config["batch_size"],
                 "epochs": config["epochs"],
                 "optimizer": config["optimizer"],
+                "loss": config.get("loss", "cross_entropy"),
+                "cosine_weight": (
+                    config.get("cosine_weight", 1.0)
+                    if config.get("loss", "cross_entropy") == "combined" else 0.0
+                ),
                 "momentum": config.get("momentum", 0.0),
                 "pretrained": False,
                 "lr_scheduler": config.get("lr_scheduler", "none"),
+                "lr_cosine_t_max": config.get("lr_cosine_t_max", config["epochs"]),
+                "lr_cosine_min_lr": config.get("lr_cosine_min_lr", 0.000001),
                 "lr_step_size": config.get("lr_step_size", 30),
                 "lr_gamma": config.get("lr_gamma", 0.1),
                 "lr_plateau_monitor": "val_loss",
@@ -235,6 +262,10 @@ def main():
                 "seed": config["seed"],
                 "validation_fraction": config["validation_fraction"],
                 "train_dataset": config["train_dataset"],
+                "use_bounding_boxes": config.get("use_bounding_boxes", False),
+                "random_crop_probability": config.get("random_crop_probability", 0.0),
+                "random_crop_scale": str(config.get("random_crop_scale", [0.6, 1.0])),
+                "bbox_annotation_dir": config.get("bbox_annotation_dir", "data/CUB_200_2011"),
             })
 
             history = fit(
@@ -254,8 +285,15 @@ def main():
 
             # Existing teammate metric logging.
             for result in history:
+                # Preserve CE metrics and record combined-loss components separately.
+                component_metrics = {}
+                for split, prefix in (("train", "train"), ("validation", "val")):
+                    for name in ("cosine_loss", "total_loss"):
+                        if name in result[split]:
+                            component_metrics[f"{prefix}_{name}"] = result[split][name]
                 mlflow.log_metrics(
                     {
+                        **component_metrics,
                         "train_loss": result["train"]["loss"],
                         "train_accuracy": result["train"]["accuracy"],
                         "train_macro_recall": result["train"]["macro_recall"],
