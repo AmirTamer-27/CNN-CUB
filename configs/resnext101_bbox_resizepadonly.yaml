@@ -21,3 +21,5 @@ classifier_weight_decay: 1.0e-4
 
 lr_plateau_factor: 0.5
 lr_plateau_patience: 2
+
+dropout: 0.7
