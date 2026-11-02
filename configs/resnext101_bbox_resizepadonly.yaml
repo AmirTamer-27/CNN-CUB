@@ -1,0 +1,23 @@
+model: "resnext101"
+run_name: "resnext101-bbox-noaug-320"
+num_classes: 200
+image_size: 320
+batch_size: 64
+validation_fraction: 0.2
+seed: 42
+
+use_bounding_boxes: true
+bbox_annotation_dir: "data/CUB_200_2011"
+
+stage1_epochs: 5
+stage1_learning_rate: 1.0e-3
+stage1_weight_decay: 1.0e-4
+
+stage2_epochs: 25
+layer4_learning_rate: 1.0e-5
+layer4_weight_decay: 1.0e-3
+classifier_learning_rate: 1.0e-4
+classifier_weight_decay: 1.0e-4
+
+lr_plateau_factor: 0.5
+lr_plateau_patience: 2
