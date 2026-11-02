@@ -64,8 +64,8 @@ def main():
 
     # Validate optimizer and scheduler only when training scratch models.
     if args.command == "train" and config["model"] != "resnext101":
-        if config["optimizer"] not in ("adam", "sgd"):
-            raise ValueError("Choose optimizer: adam or sgd.")
+        if config["optimizer"] not in ("adam", "adamw", "sgd"):
+            raise ValueError("Choose optimizer: adam, adamw, or sgd.")
 
         if config.get("lr_scheduler", "none") not in (
             "none", "step", "plateau", "cosine"
@@ -180,6 +180,12 @@ def main():
 
             if config["optimizer"] == "adam":
                 optimizer = torch.optim.Adam(
+                    model.parameters(),
+                    lr=config["learning_rate"],
+                    weight_decay=config.get("weight_decay", 0.0),
+                )
+            elif config["optimizer"] == "adamw":
+                optimizer = torch.optim.AdamW(
                     model.parameters(),
                     lr=config["learning_rate"],
                     weight_decay=config.get("weight_decay", 0.0),

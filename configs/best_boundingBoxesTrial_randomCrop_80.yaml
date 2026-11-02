@@ -1,4 +1,4 @@
-run_name: best_boundingBoxesTrial_randomCrop_80
+run_name: best_randomCrop_ADAMW
 model: bird_cnn_delayed_pooling
 num_classes: 200
 dropout: 0.3
@@ -14,7 +14,7 @@ cutout_max_fraction: 0.3
 cutout_fill: 0.5019607843137255
 batch_size: 32
 epochs: 80
-optimizer: adam
+optimizer: adamw
 momentum: 0.0
 pretrained: false
 lr_scheduler: plateau
