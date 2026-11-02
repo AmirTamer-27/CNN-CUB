@@ -5,7 +5,7 @@ train_dataset: Multimodal-Fatima/CUB_train
 num_classes: 200
 
 image_size: 320
-batch_size: 32
+batch_size: 64
 num_workers: 2
 
 validation_fraction: 0.2
@@ -41,4 +41,4 @@ dropout: 0.7
 checkpoint_dir: outputs/checkpoints
 
 # Experiment
-run_name: resnext101-bbox-noaug-320
+run_name: resnext101-bbox-lightaug-320

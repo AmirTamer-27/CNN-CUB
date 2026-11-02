@@ -1,10 +1,11 @@
-"""Data loaders for transfer-learning experiments with bboxes and zero augmentations."""
+"""Data loaders for transfer-learning experiments with bounding boxes and light augmentations."""
 
 import torch
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 
 from src.data.transforms import (
+    get_train_transforms,
     get_val_transforms,
     resize_and_pad,
 )
@@ -12,7 +13,7 @@ from src.data.bounding_boxes import crop_dataset
 
 
 def make_transfer_loaders(config):
-    """Create train and validation loaders with bounding boxes and no data augmentation."""
+    """Create train and validation loaders with bboxes, light training augs, and clean validation."""
 
     full_train = load_dataset(
         config["train_dataset"],
@@ -31,27 +32,34 @@ def make_transfer_loaders(config):
         seed=config["seed"],
     )
 
-    # Use val transform (resize/pad + tensor + normalize) for both train and validation
-    base_transform = get_val_transforms()
+    # Assign distinct transforms for training (with light augs) vs validation (clean)
+    train_transform = get_train_transforms(config["image_size"])
+    val_transform = get_val_transforms()
 
-    def prepare_clean_batch(batch):
+    def prepare_train(batch):
         images = []
         for image in batch["image"]:
-            # Resize and pad to target size (e.g., 384) using LANCZOS
-            image = resize_and_pad(
-                image,
-                size=config["image_size"],
-            )
-            image = base_transform(image)
+            image = resize_and_pad(image, size=config["image_size"])
+            image = train_transform(image)
             images.append(image)
-
         return {
             "image": images,
             "label": batch["label"],
         }
 
-    train = split["train"].with_transform(prepare_clean_batch)
-    validation = split["test"].with_transform(prepare_clean_batch)
+    def prepare_validation(batch):
+        images = []
+        for image in batch["image"]:
+            image = resize_and_pad(image, size=config["image_size"])
+            image = val_transform(image)
+            images.append(image)
+        return {
+            "image": images,
+            "label": batch["label"],
+        }
+
+    train = split["train"].with_transform(prepare_train)
+    validation = split["test"].with_transform(prepare_validation)
 
     generator = torch.Generator().manual_seed(config["seed"])
 
