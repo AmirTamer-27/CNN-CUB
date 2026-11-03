@@ -85,7 +85,7 @@ def make_transfer_loaders(config):
 def make_test_loader(config):
     """Create a DataLoader for the official test set with bboxes and clean validation transforms."""
     test_dataset_name = config.get("test_dataset", "Multimodal-Fatima/CUB_test")
-    test_data = load_dataset(test_dataset_name, split="train")
+    test_data = load_dataset(test_dataset_name, split="test")
 
     # Apply official CUB bounding box crops if configured
     if config.get("use_bounding_boxes", False):

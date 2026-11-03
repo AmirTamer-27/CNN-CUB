@@ -1,6 +1,9 @@
 """Start training from the project root with:
 python -m src.cli train --config PATH
 
+Evaluate on test set:
+python -m src.cli evaluate-test --config PATH --weights PATH
+
 Analyze validation:
 python -m src.cli analyze-validation --config PATH --weights PATH
 """
@@ -23,9 +26,10 @@ from src.models.bird_resnet18 import BirdResNet18
 from src.training.trainer import fit
 
 # ResNeXt imports
-from src.data.transfer_dataset import make_transfer_loaders
+from src.data.transfer_dataset import make_transfer_loaders, make_test_loader
 from src.models.transfer import create_resnext_classifier
 from src.training.transfer_trainer import fit_transfer
+from src.training.trainer import validate
 
 
 def main():
@@ -34,6 +38,13 @@ def main():
 
     train_command = commands.add_parser("train")
     train_command.add_argument("--config", required=True)
+
+    test_command = commands.add_parser(
+        "evaluate-test",
+        help="Evaluate a saved ResNeXt checkpoint on the official test set",
+    )
+    test_command.add_argument("--config", required=True)
+    test_command.add_argument("--weights", required=True)
 
     analysis_command = commands.add_parser(
         "analyze-validation",
@@ -137,7 +148,40 @@ def main():
     print(f"Model: {config['model']}")
     print(f"Device: {device}")
 
-    # 5. Handle validation analysis.
+    # 5. Handle standalone test set evaluation.
+    if args.command == "evaluate-test":
+        if config["model"] != "resnext101":
+            raise NotImplementedError("evaluate-test currently supports ResNeXt checkpoints.")
+
+        print("\nEvaluating saved checkpoint on the official test set...")
+        test_loader = make_test_loader(config)
+        criterion = nn.CrossEntropyLoss()
+
+        checkpoint_state = torch.load(args.weights, map_location=device)
+        if isinstance(checkpoint_state, dict) and "model_state_dict" in checkpoint_state:
+            model.load_state_dict(checkpoint_state["model_state_dict"])
+        else:
+            model.load_state_dict(checkpoint_state)
+
+        model.eval()
+        test_metrics = validate(
+            model,
+            test_loader,
+            criterion,
+            device,
+            config["num_classes"],
+        )
+
+        print("\n" + "="*30)
+        print(" OFFICIAL TEST SET RESULTS ")
+        print("="*30)
+        print(f"Test Loss: {test_metrics['loss']:.4f}")
+        print(f"Test Accuracy: {test_metrics['accuracy']:.2f}%")
+        print(f"Test Macro Recall: {test_metrics['macro_recall']:.2f}%")
+        print("="*30 + "\n")
+        return
+
+    # 6. Handle validation analysis.
     if args.command == "analyze-validation":
         if config["model"] == "resnext101":
             raise NotImplementedError(
@@ -163,7 +207,7 @@ def main():
         )
         return
 
-    # 6. Configure MLflow.
+    # 7. Configure MLflow.
     mlflow.set_tracking_uri(
         "https://dagshub.com/AmirTamer-27/CNN-CUD.mlflow"
     )
@@ -198,73 +242,20 @@ def main():
                     weight_decay=config.get("weight_decay", 0.0),
                 )
 
-            # Existing teammate parameter logging.
             mlflow.log_params({
                 "model": config["model"],
                 "dropout": config.get("dropout", 0.0),
                 "image_size": config["image_size"],
-                "horizontal_flip_probability": config.get(
-                    "horizontal_flip_probability", 0.0
-                ),
-                "contrast_change_probability": config.get(
-                    "contrast_change_probability", 0.0
-                ),
-                "contrast_strength": config.get(
-                    "contrast_strength", 0.2
-                ),
-                "brightness_change_probability": config.get(
-                    "brightness_change_probability", 0.0
-                ),
-                "brightness_strength": config.get(
-                    "brightness_strength", 0.2
-                ),
-                "cutout_probability": config.get(
-                    "cutout_probability", 0.0
-                ),
-                "cutout_min_fraction": config.get(
-                    "cutout_min_fraction", 0.25
-                ),
-                "cutout_max_fraction": config.get(
-                    "cutout_max_fraction", 0.30
-                ),
-                "cutout_fill": 128 / 255,
                 "batch_size": config["batch_size"],
                 "epochs": config["epochs"],
                 "optimizer": config["optimizer"],
                 "loss": config.get("loss", "cross_entropy"),
-                "cosine_weight": (
-                    config.get("cosine_weight", 1.0)
-                    if config.get("loss", "cross_entropy") == "combined" else 0.0
-                ),
-                "momentum": config.get("momentum", 0.0),
-                "pretrained": False,
-                "lr_scheduler": config.get("lr_scheduler", "none"),
-                "lr_cosine_t_max": config.get("lr_cosine_t_max", config["epochs"]),
-                "lr_cosine_min_lr": config.get("lr_cosine_min_lr", 0.000001),
-                "lr_step_size": config.get("lr_step_size", 30),
-                "lr_gamma": config.get("lr_gamma", 0.1),
-                "lr_plateau_monitor": "val_loss",
-                "lr_plateau_factor": config.get(
-                    "lr_plateau_factor", 0.5
-                ),
-                "lr_plateau_patience": config.get(
-                    "lr_plateau_patience", 5
-                ),
-                "lr_plateau_threshold": config.get(
-                    "lr_plateau_threshold", 0.001
-                ),
-                "lr_plateau_threshold_mode": "abs",
-                "lr_plateau_min_lr": config.get(
-                    "lr_plateau_min_lr", 0.000001
-                ),
                 "learning_rate": config["learning_rate"],
                 "weight_decay": config.get("weight_decay", 0.0),
                 "seed": config["seed"],
                 "validation_fraction": config["validation_fraction"],
                 "train_dataset": config["train_dataset"],
                 "use_bounding_boxes": config.get("use_bounding_boxes", False),
-                "random_crop_probability": config.get("random_crop_probability", 0.0),
-                "random_crop_scale": str(config.get("random_crop_scale", [0.6, 1.0])),
                 "bbox_annotation_dir": config.get("bbox_annotation_dir", "data/CUB_200_2011"),
             })
 
@@ -278,31 +269,19 @@ def main():
                 config,
             )
 
-            # Existing teammate checkpoint saving.
             weights_path = f"{config['run_name']}.pth"
             torch.save(model.state_dict(), weights_path)
             mlflow.log_artifact(weights_path, artifact_path="weights")
 
-            # Existing teammate metric logging.
             for result in history:
-                # Preserve CE metrics and record combined-loss components separately.
-                component_metrics = {}
-                for split, prefix in (("train", "train"), ("validation", "val")):
-                    for name in ("cosine_loss", "total_loss"):
-                        if name in result[split]:
-                            component_metrics[f"{prefix}_{name}"] = result[split][name]
                 mlflow.log_metrics(
                     {
-                        **component_metrics,
                         "train_loss": result["train"]["loss"],
                         "train_accuracy": result["train"]["accuracy"],
                         "train_macro_recall": result["train"]["macro_recall"],
                         "val_loss": result["validation"]["loss"],
                         "val_accuracy": result["validation"]["accuracy"],
                         "val_macro_recall": result["validation"]["macro_recall"],
-                        "learning_rate": result.get(
-                            "learning_rate", config["learning_rate"]
-                        ),
                     },
                     step=result["epoch"],
                 )
@@ -347,43 +326,6 @@ def main():
                 checkpoint_path,
                 artifact_path="checkpoints",
             )
-
-            
-            print("\nEvaluating best model on the official test set...")
-            from src.data.transfer_dataset import make_test_loader
-            from src.training.trainer import validate
-
-            test_loader = make_test_loader(config)
-            criterion = nn.CrossEntropyLoss(label_smoothing=config.get("label_smoothing", 0.0))
-
-            checkpoint_state = torch.load(checkpoint_path, map_location=device)
-            if isinstance(checkpoint_state, dict) and "model_state_dict" in checkpoint_state:
-                model.load_state_dict(checkpoint_state["model_state_dict"])
-            else:
-                model.load_state_dict(checkpoint_state)
-
-            model.eval()
-            test_metrics = validate(
-                model,
-                test_loader,
-                criterion,
-                device,
-                config["num_classes"],
-            )
-
-            print("\n" + "="*30)
-            print(" OFFICIAL TEST SET RESULTS ")
-            print("="*30)
-            print(f"Test Loss: {test_metrics['loss']:.4f}")
-            print(f"Test Accuracy: {test_metrics['accuracy']:.2f}%")
-            print(f"Test Macro Recall: {test_metrics['macro_recall']:.2f}%")
-            print("="*30 + "\n")
-
-            mlflow.log_metrics({
-                "test_loss": test_metrics["loss"],
-                "test_accuracy": test_metrics["accuracy"],
-                "test_macro_recall": test_metrics["macro_recall"],
-            })
 
 
 if __name__ == "__main__":
