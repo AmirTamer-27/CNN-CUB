@@ -213,8 +213,8 @@ All old scheduler modes, model settings, augmentation, and two workers are retai
 `configs/bestBounding_RandomCrop.yaml` preserves its 70-epoch random-crop variant.
 Both explicitly set `dropout2d: 0.0`; the former disables random cropping.
 `configs/bestBounding_RandomCrop_Dropout2D.yaml` uses the same Adam, weight decay
-0.0001, augmentation and plateau settings, adds `dropout2d: 0.1` and runs 100 epochs.
-The run names match these filenames. Earlier config files are retained.
+0.0001, augmentation and plateau settings, adds `dropout2d: 0.1` and runs 120 epochs.
+Its run name ends in `_120`. Earlier config files are retained.
 
 For the delayed-pooling model, Dropout2d is applied after each of the six complete
 blocks (after max pooling where present). It zeros entire per-image feature maps
@@ -222,3 +222,62 @@ during training and is disabled by model.eval(). It adds no parameters or change
 to map sizes; existing ordinary dropout 0.3 before the FC remains. Old configs
 default to convolutional dropout off. CLI construction and saved-weight analysis
 read this setting, and MLflow logs it. No other model enables this option.
+
+
+## Two-GPU grid search
+
+From the project root on Kaggle with T4 x2 and the existing MLflow credentials:
+
+```bash
+python -u -m src.cli grid-search --config configs/bestBounding_RandomCrop_Dropout2D.yaml --epochs 120 --gpus 0 1
+```
+
+The default grid crosses learning rates `[0.0005, 0.001]` with Dropout2d
+`[0.05, 0.10]`: four freshly initialized trials, at most two at once.
+Each child runs the existing `train` command with only one GPU visible.
+Batch size stays 32 per trial; DataLoader workers stay at 2 per loader.
+The base YAML is not modified. All other settings, including the seed, split,
+bounding boxes, augmentation and plateau scheduler, come from that file.
+Use `--dry-run` to preview without CUDA, downloads or training.
+Optional `--learning-rates`, `--dropout2d-values`, `--epochs` and `--gpus`
+override the grid and budget; for example `--gpus 0` runs sequentially.
+
+`src/training/grid_search.py` queues trials onto free GPUs. Each receives a unique
+MLflow run name and shared `grid_search_id` tag. Compare `best_val_accuracy` and
+`best_val_loss` in MLflow; these can occur at different epochs. Saved weights
+still represent the final epoch, not the best epoch. Epoch histories upload after
+each trial finishes, as in ordinary training.
+
+Generated YAML settings and separate live text logs are in
+`outputs/grid_search/<search_id>/`, which Git ignores. Read a printed `.log` path
+from another notebook cell to inspect progress. Final weights remain in the
+project root and upload to each trial's MLflow run. No JSON results are written.
+Failed trials are reported while remaining trials continue. Interrupting the
+launcher terminates its active child processes. This is a fixed grid, not Optuna
+and not early pruning. Four 120-epoch trials take about 5.8 hours only if concurrent
+epochs maintain 87 seconds; shared CPU resources may extend this to 6–8 hours.
+
+## Two-GPU random search
+
+```bash
+python -u -m src.cli random-search --config configs/bestBounding_RandomCrop_Dropout2D.yaml --trials 4 --epochs 120 --gpus 0 1
+```
+
+Grid search tests every combination of the listed discrete values. Random search
+samples a fixed number of combinations from ranges instead. Defaults sample the
+initial learning rate log-uniformly from 0.0005–0.001 (equal probability for equal
+multiplicative intervals) and Dropout2d uniformly from 0.05–0.10. These ranges
+match the grid endpoints, but intermediate values can be chosen. All trials are
+chosen before training; sampling does not adapt to earlier results or prune trials.
+
+Override with `--lr-range MIN MAX`, `--dropout2d-range MIN MAX`, `--trials N`,
+`--search-seed N`, `--epochs N`, or `--gpus 0` for sequential execution.
+`--search-seed` defaults to 42 and reproduces the sampled combinations; it does
+not change the model/data seed in YAML. Add `--dry-run` to preview without training.
+The shared GPU queue still runs at most one process per selected GPU, retains
+all other base settings and the two workers, and gives each trial its own MLflow
+run and final weights. Tags `search_method`, `search_id`, `search_trial`, and
+`search_seed` identify random trials. Generated YAML and live logs go under
+`outputs/random_search/<search_id>/`; no JSON results are written.
+Four random trials cost approximately the same as four grid trials with the
+same epoch budget. Running both commands would mean eight trials, not four.

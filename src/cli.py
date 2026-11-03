@@ -42,10 +42,41 @@ def main():
     analysis_command.add_argument("--config", required=True)
     analysis_command.add_argument("--weights", required=True)
 
+    grid_command = commands.add_parser("grid-search", help="Run independent trials on separate GPUs")
+    grid_command.add_argument("--config", required=True)
+    grid_command.add_argument("--epochs", type=int, default=120)
+    grid_command.add_argument("--gpus", nargs="+", type=int, default=[0, 1])
+    grid_command.add_argument("--learning-rates", nargs="+", type=float, default=[0.0005, 0.001])
+    grid_command.add_argument("--dropout2d-values", nargs="+", type=float, default=[0.05, 0.10])
+    grid_command.add_argument("--dry-run", action="store_true", help="Preview without training")
+
+    random_command = commands.add_parser("random-search", help="Sample trial settings from ranges")
+    random_command.add_argument("--config", required=True)
+    random_command.add_argument("--epochs", type=int, default=120)
+    random_command.add_argument("--gpus", nargs="+", type=int, default=[0, 1])
+    random_command.add_argument("--trials", type=int, default=4)
+    random_command.add_argument("--lr-range", nargs=2, type=float, default=[0.0005, 0.001], metavar=("MIN", "MAX"))
+    random_command.add_argument("--dropout2d-range", nargs=2, type=float, default=[0.05, 0.10], metavar=("MIN", "MAX"))
+    random_command.add_argument("--search-seed", type=int, default=42)
+    random_command.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
+
+    if args.command == "grid-search":
+        from src.training.grid_search import run_grid_search
+        run_grid_search(config, args.gpus, args.epochs, args.learning_rates,
+                        args.dropout2d_values, dry_run=args.dry_run)
+        return
+
+    if args.command == "random-search":
+        from src.training.random_search import run_random_search
+        run_random_search(config, args.gpus, args.epochs, args.trials,
+                          args.lr_range, args.dropout2d_range, args.search_seed,
+                          dry_run=args.dry_run)
+        return
 
     # 1. Validate the selected model.
     supported_models = (
@@ -180,6 +211,13 @@ def main():
     mlflow.set_experiment("bird-classification")
 
     with mlflow.start_run(run_name=config["run_name"]):
+        if "search_id" in config:
+            mlflow.set_tags({key: config[key] for key in
+                             ("search_id", "search_method", "search_trial", "search_seed")
+                             if key in config})
+        if "grid_search_id" in config:
+            mlflow.set_tags({"grid_search_id": config["grid_search_id"],
+                             "grid_trial": config["grid_trial"]})
 
         # -------------------------------------------------
         # Existing scratch-model training pipeline
@@ -288,6 +326,11 @@ def main():
                 device,
                 config,
             )
+
+            mlflow.log_metrics({
+                "best_val_accuracy": max(row["validation"]["accuracy"] for row in history),
+                "best_val_loss": min(row["validation"]["loss"] for row in history),
+            })
 
             # Existing teammate checkpoint saving.
             weights_path = f"{config['run_name']}.pth"
