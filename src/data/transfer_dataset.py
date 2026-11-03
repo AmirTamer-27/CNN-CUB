@@ -81,3 +81,38 @@ def make_transfer_loaders(config):
     class_names = full_train.features["label"].names
 
     return train_loader, validation_loader, class_names
+
+def make_test_loader(config):
+    """Create a DataLoader for the official test set with bboxes and clean validation transforms."""
+    test_dataset_name = config.get("test_dataset", "Multimodal-Fatima/CUB_test")
+    test_data = load_dataset(test_dataset_name, split="train")
+
+    # Apply official CUB bounding box crops if configured
+    if config.get("use_bounding_boxes", False):
+        annotation_dir = config.get("bbox_annotation_dir", "data/CUB_200_2011")
+        print(f"Applying CUB ground-truth bounding box crops for test set from: {annotation_dir}")
+        test_data = crop_dataset(test_data, annotation_dir)
+
+    val_transform = get_val_transforms()
+
+    def prepare_test(batch):
+        images = []
+        for image in batch["image"]:
+            image = resize_and_pad(image, size=config["image_size"])
+            image = val_transform(image)
+            images.append(image)
+        return {
+            "image": images,
+            "label": batch["label"],
+        }
+
+    test_dataset = test_data.with_transform(prepare_test)
+
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=config["batch_size"],
+        shuffle=False,
+        num_workers=config.get("num_workers", 2),
+    )
+
+    return test_loader

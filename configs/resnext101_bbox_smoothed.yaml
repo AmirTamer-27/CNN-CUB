@@ -1,6 +1,7 @@
 model: resnext101
 
 train_dataset: Multimodal-Fatima/CUB_train
+test_dataset: Multimodal-Fatima/CUB_test
 
 num_classes: 200
 

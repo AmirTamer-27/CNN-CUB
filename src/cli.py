@@ -348,6 +348,43 @@ def main():
                 artifact_path="checkpoints",
             )
 
+            
+            print("\nEvaluating best model on the official test set...")
+            from src.data.transfer_dataset import make_test_loader
+            from src.training.trainer import validate
+
+            test_loader = make_test_loader(config)
+            criterion = nn.CrossEntropyLoss(label_smoothing=config.get("label_smoothing", 0.0))
+
+            checkpoint_state = torch.load(checkpoint_path, map_location=device)
+            if isinstance(checkpoint_state, dict) and "model_state_dict" in checkpoint_state:
+                model.load_state_dict(checkpoint_state["model_state_dict"])
+            else:
+                model.load_state_dict(checkpoint_state)
+
+            model.eval()
+            test_metrics = validate(
+                model,
+                test_loader,
+                criterion,
+                device,
+                config["num_classes"],
+            )
+
+            print("\n" + "="*30)
+            print(" OFFICIAL TEST SET RESULTS ")
+            print("="*30)
+            print(f"Test Loss: {test_metrics['loss']:.4f}")
+            print(f"Test Accuracy: {test_metrics['accuracy']:.2f}%")
+            print(f"Test Macro Recall: {test_metrics['macro_recall']:.2f}%")
+            print("="*30 + "\n")
+
+            mlflow.log_metrics({
+                "test_loss": test_metrics["loss"],
+                "test_accuracy": test_metrics["accuracy"],
+                "test_macro_recall": test_metrics["macro_recall"],
+            })
+
 
 if __name__ == "__main__":
     main()
