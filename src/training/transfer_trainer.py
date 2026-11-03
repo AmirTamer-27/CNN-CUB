@@ -84,7 +84,8 @@ def fit_transfer(
     Stage 2: Fine-tune layer4 and the classifier.
     """
 
-    criterion = nn.CrossEntropyLoss()
+    label_smoothing = config.get("label_smoothing", 0.1)
+    criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     num_classes = config["num_classes"]
 
     checkpoint_dir = Path(

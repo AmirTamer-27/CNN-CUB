@@ -1,0 +1,40 @@
+model: resnext101
+
+train_dataset: Multimodal-Fatima/CUB_train
+
+num_classes: 200
+
+image_size: 320
+batch_size: 64
+num_workers: 2
+
+validation_fraction: 0.2
+seed: 42
+
+# Bounding Box Settings
+use_bounding_boxes: true
+bbox_annotation_dir: src/data/CUB_200_2011
+
+# Regularization
+label_smoothing: 0.1
+
+# Stage 1: Classifier Training
+stage1_epochs: 5
+stage1_learning_rate: 0.001
+stage1_weight_decay: 0.0001
+
+# Stage 2: Fine-tuning Layer 4 & Classifier (Layer 4 LR increased to 2.5e-5)
+stage2_epochs: 30
+layer4_learning_rate: 0.000025
+classifier_learning_rate: 0.0001
+stage2_weight_decay: 0.001
+
+# Scheduler & Early Stopping
+scheduler_patience: 2
+minimum_learning_rate: 0.0000001
+early_stopping_patience: 6
+early_stopping_min_delta: 0.0001
+
+dropout: 0.7
+checkpoint_dir: outputs/checkpoints
+run_name: resnext101-bbox-320-smoothed
