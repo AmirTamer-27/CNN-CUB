@@ -42,6 +42,11 @@ def main():
     analysis_command.add_argument("--config", required=True)
     analysis_command.add_argument("--weights", required=True)
 
+    test_command = commands.add_parser("test", help="Evaluate official test images using MLflow weights")
+    test_command.add_argument("--config", required=True)
+    test_command.add_argument("--run-id", required=True, help="MLflow training run containing weights")
+    test_command.add_argument("--artifact-path", help="Optional exact weights/filename.pth")
+
     grid_command = commands.add_parser("grid-search", help="Run independent trials on separate GPUs")
     grid_command.add_argument("--config", required=True)
     grid_command.add_argument("--epochs", type=int, default=120)
@@ -77,6 +82,12 @@ def main():
                           args.lr_range, args.dropout2d_range, args.search_seed,
                           dry_run=args.dry_run)
         return
+
+    if args.command == "test":
+        from src.evaluation.test_evaluation import download_run_weights
+        config, test_weights, source_experiment, source_artifact = download_run_weights(
+            config, args.run_id, args.artifact_path,
+        )
 
     # 1. Validate the selected model.
     supported_models = (
@@ -161,6 +172,21 @@ def main():
             dropout=config.get("dropout", 0.0),
             **model_options,
         ).to(device)
+
+    if args.command == "test":
+        from src.data.dataset import make_test_loader
+        from src.evaluation.test_evaluation import evaluate_test, log_test_results
+
+        # Load onto CPU first; this also works with GPU-saved weights on a Mac.
+        model.load_state_dict(torch.load(test_weights, map_location="cpu", weights_only=True))
+        test_loader, class_names = make_test_loader(config)
+        if len(class_names) != config["num_classes"]:
+            raise ValueError("Test classes must match num_classes.")
+        print(f"Model: {config['model']} | Device: {device}")
+        metrics, report, count = evaluate_test(model, test_loader, class_names, device)
+        log_test_results(metrics, report, count, config, args.run_id,
+                         source_experiment, source_artifact)
+        return
 
     # 4. Prepare the appropriate data loaders.
     if config["model"] == "resnext101":

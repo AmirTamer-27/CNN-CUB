@@ -281,3 +281,42 @@ run and final weights. Tags `search_method`, `search_id`, `search_trial`, and
 `outputs/random_search/<search_id>/`; no JSON results are written.
 Four random trials cost approximately the same as four grid trials with the
 same epoch budget. Running both commands would mean eight trials, not four.
+
+
+## Evaluate official test images with MLflow weights
+
+```bash
+python -u -m src.cli test --config configs/bestBounding_RandomCrop_Dropout2D.yaml --run-id TRAINING_RUN_ID
+```
+
+Use the ID of the selected training run. Existing MLflow username/token environment
+variables authenticate the download and result upload. The command finds the sole
+`.pth` file under that run's `weights/` folder automatically. If more than one exists,
+select one with `--artifact-path weights/EXACT_FILENAME.pth` (relative to the MLflow
+run's artifacts, not a local path). Downloads go to `outputs/downloaded_weights/`.
+
+The base YAML supplies local settings such as the annotation directory and batch
+size. When present, the source run's recorded model, image size, dropout settings
+and bounding-box flag override the YAML for inference. Missing older run parameters
+fall back to YAML, so use a matching config. The command prints the effective image
+size and bbox flag. It currently supports the scratch models; the separate ResNeXt
+preprocessing is not supported. State dict loading is strict and uses CPU map_location
+before copying into the selected model/device.
+
+Only `Multimodal-Fatima/CUB_test`, split `test`, is loaded; no training/validation
+split is recreated. For bbox-trained runs, original test filenames are matched to
+the same complete CUB `images.txt` and `bounding_boxes.txt` annotations. Keep those
+files at the config's `bbox_annotation_dir`, currently `src/data/CUB_200_2011`.
+Missing annotations raise an error instead of dropping test samples. Images are
+cropped without a margin, resized/padded and converted to tensors. All augmentation
+is disabled. Evaluation uses model.eval() and inference mode; no optimizer or weight
+update runs. The two loader workers are retained.
+
+Output is test cross-entropy loss, accuracy and macro recall (percentages), followed
+by a per-species precision/recall/F1/support report (fractions). A separate MLflow run
+named `test_<source-id-prefix>` in the source experiment stores `test_loss`,
+`test_accuracy`, `test_macro_recall`, and `test/classification_report.txt`. Its
+`source_run_id` tag links back to the trained weights. The source training run is
+not modified, and no JSON reports are written. Training currently saves final-epoch
+weights; a training run's best validation score may refer to different weights.
+Select your model using validation before this final test evaluation.

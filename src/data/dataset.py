@@ -61,3 +61,27 @@ def make_loaders(config):
     )
     class_names = full_train.features["label"].names
     return train_loader, validation_loader, class_names
+
+
+def make_test_loader(config):
+    """Official test split, with the same deterministic preparation as validation."""
+    from datasets import load_dataset
+
+    test = load_dataset("Multimodal-Fatima/CUB_test", split="test")
+    if config.get("use_bounding_boxes", False):
+        test = crop_dataset(
+            test, config.get("bbox_annotation_dir", "data/CUB_200_2011"),
+        )
+    class_names = test.features["label"].names
+
+    def prepare_test(batch):
+        # All augmentation probabilities default to zero.
+        return prepare_images(batch, image_size=config["image_size"])
+
+    test = test.with_transform(prepare_test)
+    loader = DataLoader(
+        test, batch_size=config["batch_size"], shuffle=False,
+        num_workers=2, persistent_workers=True,
+        pin_memory=torch.cuda.is_available(),
+    )
+    return loader, class_names
