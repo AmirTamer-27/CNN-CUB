@@ -46,7 +46,12 @@ class DecoderBlock(nn.Module):
 class BirdColorizationUNet(nn.Module):
     """Predict a 3-channel RGB image from a grayscale bird image."""
 
-    def __init__(self, encoder=None, freeze_encoder=True):
+    def __init__(
+        self,
+        encoder=None,
+        trainable_encoder_blocks=None,
+        adapt_trainable_batch_norm=False,
+    ):
         super().__init__()
         self.encoder = encoder or BirdCNNDelayedPooling()
 
@@ -58,26 +63,43 @@ class BirdColorizationUNet(nn.Module):
 
         # Spatial refinement is complete; map 16 features per pixel to RGB.
         self.output_layer = nn.Conv2d(16, 3, kernel_size=1)
-        self.encoder_trainable = False
-        self.set_encoder_trainable(not freeze_encoder)
+        self.trainable_encoder_blocks = []
+        self.adapt_trainable_batch_norm = adapt_trainable_batch_norm
+        self.set_trainable_encoder_blocks(trainable_encoder_blocks or [])
 
-    def set_encoder_trainable(self, trainable):
-        """Freeze or unfreeze the Phase 1 encoder."""
+    def set_trainable_encoder_blocks(self, block_names):
+        """Freeze the encoder, then unfreeze only the requested blocks."""
+        valid_blocks = [f"block{index}" for index in range(1, 7)]
+        invalid_blocks = [name for name in block_names if name not in valid_blocks]
+        if invalid_blocks:
+            raise ValueError(
+                f"Invalid encoder blocks: {invalid_blocks}. "
+                f"Choose from {valid_blocks}."
+            )
+
         for parameter in self.encoder.parameters():
-            parameter.requires_grad = trainable
+            parameter.requires_grad = False
 
-        self.encoder_trainable = trainable
+        for block_name in block_names:
+            block = getattr(self.encoder, block_name)
+            for parameter in block.parameters():
+                parameter.requires_grad = True
 
-        if trainable:
-            self.encoder.train(self.training)
-        else:
-            self.encoder.eval()
+        self.trainable_encoder_blocks = list(block_names)
+        self.encoder.eval()
 
     def train(self, mode=True):
-        """Keep a frozen encoder, including its BatchNorm layers, in eval mode."""
+        """Train selected weights and optionally adapt their BatchNorm statistics."""
         super().train(mode)
-        if not self.encoder_trainable:
-            self.encoder.eval()
+        self.encoder.eval()
+
+        if mode and self.adapt_trainable_batch_norm:
+            for block_name in self.trainable_encoder_blocks:
+                block = getattr(self.encoder, block_name)
+                for module in block.modules():
+                    if isinstance(module, nn.BatchNorm2d):
+                        module.train()
+
         return self
 
     def encode(self, grayscale):

@@ -1,4 +1,4 @@
-run_name: colorization_unet_frozen_encoder
+run_name: colorization_unet_partial_block5_block6
 model: bird_cnn_delayed_pooling
 num_classes: 200
 dropout: 0.3
@@ -11,10 +11,14 @@ seed: 42
 batch_size: 32
 epochs: 80
 
-learning_rate: 0.001
+decoder_learning_rate: 0.001
+encoder_learning_rate: 0.00008
 weight_decay: 0.0001
-freeze_encoder: true
-decoder_checkpoint_path: outputs/checkpoints/colorization_decoder_best.pth
+trainable_encoder_blocks:
+  - block5
+  - block6
+adapt_trainable_batch_norm: true
+checkpoint_path: outputs/checkpoints/colorization_model_best.pth
 early_stopping_patience: 5
 early_stopping_min_delta: 0.0005
 

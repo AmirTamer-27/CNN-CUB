@@ -18,8 +18,8 @@ from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
 from src.models.colorization_unet import BirdColorizationUNet
 
 
-def download_decoder_weights(run_id):
-    """Download the decoder checkpoint and read its linked encoder information."""
+def download_colorization_weights(run_id):
+    """Download colorization weights and read linked encoder information."""
     mlflow.set_tracking_uri(TRACKING_URI)
     client = MlflowClient()
     run = client.get_run(run_id)
@@ -40,20 +40,20 @@ def download_decoder_weights(run_id):
 
     if len(candidates) != 1:
         raise ValueError(
-            f"Expected one decoder checkpoint, but found {len(candidates)}."
+            f"Expected one colorization checkpoint, but found {len(candidates)}."
         )
 
-    decoder_path = mlflow.artifacts.download_artifacts(
+    checkpoint_path = mlflow.artifacts.download_artifacts(
         run_id=run_id,
         artifact_path=candidates[0],
         dst_path=str(Path("outputs/downloaded_weights") / run_id),
     )
 
-    return decoder_path, encoder_run_id, encoder_artifact
+    return checkpoint_path, encoder_run_id, encoder_artifact
 
 
 def build_model(config, colorization_run_id, device):
-    decoder_path, encoder_run_id, encoder_artifact = download_decoder_weights(
+    checkpoint_path, encoder_run_id, encoder_artifact = download_colorization_weights(
         colorization_run_id
     )
 
@@ -75,14 +75,18 @@ def build_model(config, colorization_run_id, device):
         torch.load(encoder_path, map_location="cpu", weights_only=True)
     )
 
-    model = BirdColorizationUNet(encoder=encoder, freeze_encoder=True)
-    decoder_weights = torch.load(
-        decoder_path,
+    model = BirdColorizationUNet(
+        encoder=encoder,
+        trainable_encoder_blocks=[],
+        adapt_trainable_batch_norm=False,
+    )
+    colorization_weights = torch.load(
+        checkpoint_path,
         map_location="cpu",
         weights_only=True,
     )
     missing_keys, unexpected_keys = model.load_state_dict(
-        decoder_weights,
+        colorization_weights,
         strict=False,
     )
 
@@ -91,7 +95,7 @@ def build_model(config, colorization_run_id, device):
     ]
     if invalid_missing_keys or unexpected_keys:
         raise ValueError(
-            "Decoder checkpoint does not match the colorization model. "
+            "Checkpoint does not match the colorization model. "
             f"Missing: {invalid_missing_keys}; unexpected: {unexpected_keys}"
         )
 

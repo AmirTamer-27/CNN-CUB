@@ -77,15 +77,23 @@ def validate(model, loader, criterion, device):
     return validation_mae, validation_psnr
 
 
-def save_decoder_weights(model, checkpoint_path):
-    """Save the decoder and RGB output layer without the encoder weights."""
-    decoder_weights = {}
+def save_colorization_weights(model, checkpoint_path):
+    """Save the decoder and any encoder blocks fine-tuned for colorization."""
+    colorization_weights = {}
+    trainable_encoder_prefixes = [
+        f"encoder.{block_name}."
+        for block_name in model.trainable_encoder_blocks
+    ]
 
     for name, weights in model.state_dict().items():
-        if not name.startswith("encoder."):
-            decoder_weights[name] = weights
+        is_decoder_weight = not name.startswith("encoder.")
+        is_trainable_encoder_weight = any(
+            name.startswith(prefix) for prefix in trainable_encoder_prefixes
+        )
+        if is_decoder_weight or is_trainable_encoder_weight:
+            colorization_weights[name] = weights
 
-    torch.save(decoder_weights, checkpoint_path)
+    torch.save(colorization_weights, checkpoint_path)
 
 
 def main():
@@ -126,24 +134,57 @@ def main():
 
     model = BirdColorizationUNet(
         encoder=encoder,
-        freeze_encoder=config.get("freeze_encoder", True),
+        trainable_encoder_blocks=config.get("trainable_encoder_blocks", []),
+        adapt_trainable_batch_norm=config.get(
+            "adapt_trainable_batch_norm",
+            False,
+        ),
     ).to(device)
+    print(
+        "Trainable encoder blocks: "
+        f"{model.trainable_encoder_blocks or 'none'}"
+    )
+    print(
+        "Adapt BatchNorm in trainable blocks: "
+        f"{model.adapt_trainable_batch_norm}"
+    )
 
     train_loader, validation_loader, _ = make_loaders(config)
     criterion = nn.L1Loss()
 
-    trainable_parameters = []
-    for parameter in model.parameters():
-        if parameter.requires_grad:
-            trainable_parameters.append(parameter)
+    decoder_parameters = []
+    encoder_parameters = []
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        if name.startswith("encoder."):
+            encoder_parameters.append(parameter)
+        else:
+            decoder_parameters.append(parameter)
+
+    decoder_learning_rate = config["decoder_learning_rate"]
+    encoder_learning_rate = config["encoder_learning_rate"]
+    if decoder_learning_rate <= 0 or encoder_learning_rate <= 0:
+        raise ValueError("Encoder and decoder learning rates must be positive.")
+
+    parameter_groups = [
+        {
+            "params": decoder_parameters,
+            "lr": decoder_learning_rate,
+        }
+    ]
+    if encoder_parameters:
+        parameter_groups.append({
+            "params": encoder_parameters,
+            "lr": encoder_learning_rate,
+        })
 
     optimizer = torch.optim.Adam(
-        trainable_parameters,
-        lr=config["learning_rate"],
+        parameter_groups,
         weight_decay=config.get("weight_decay", 0.0),
     )
 
-    checkpoint_path = Path(config["decoder_checkpoint_path"])
+    checkpoint_path = Path(config["checkpoint_path"])
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     best_validation_mae = float("inf")
     best_validation_psnr = 0.0
@@ -159,11 +200,15 @@ def main():
         mlflow.log_params({
             "encoder_run_id": args.run_id,
             "encoder_artifact": source_artifact,
-            "freeze_encoder": config.get("freeze_encoder", True),
+            "trainable_encoder_blocks": ",".join(
+                model.trainable_encoder_blocks
+            ) or "none",
+            "adapt_trainable_batch_norm": model.adapt_trainable_batch_norm,
             "image_size": config["image_size"],
             "batch_size": config["batch_size"],
             "epochs": config["epochs"],
-            "learning_rate": config["learning_rate"],
+            "decoder_learning_rate": decoder_learning_rate,
+            "encoder_learning_rate": encoder_learning_rate,
             "weight_decay": config.get("weight_decay", 0.0),
             "loss": "mae",
             "use_bounding_boxes": config["use_bounding_boxes"],
@@ -197,8 +242,8 @@ def main():
 
             if validation_mae < best_validation_mae:
                 best_validation_mae = validation_mae
-                save_decoder_weights(model, checkpoint_path)
-                print(f"Best decoder checkpoint saved: {checkpoint_path}")
+                save_colorization_weights(model, checkpoint_path)
+                print(f"Best colorization checkpoint saved: {checkpoint_path}")
 
             best_validation_psnr = max(best_validation_psnr, validation_psnr)
 
