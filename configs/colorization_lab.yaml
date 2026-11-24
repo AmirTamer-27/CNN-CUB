@@ -1,0 +1,36 @@
+run_name: colorization_lab_bins_frozen_encoder
+model: bird_cnn_delayed_pooling
+num_classes: 200
+dropout: 0.3
+dropout2d: 0.0
+
+train_dataset: Multimodal-Fatima/CUB_train
+image_size: 320
+validation_fraction: 0.2
+seed: 42
+batch_size: 32
+epochs: 80
+
+decoder_learning_rate: 0.001
+encoder_learning_rate: 0.00008
+weight_decay: 0.0001
+trainable_encoder_blocks: []
+adapt_trainable_batch_norm: false
+color_bins_path: src/data/pts_in_hull.npy
+checkpoint_path: outputs/checkpoints/colorization_lab_model_best.pth
+early_stopping_patience: 5
+early_stopping_min_delta: 0.0005
+
+use_bounding_boxes: true
+bbox_annotation_dir: src/data/CUB_200_2011
+
+horizontal_flip_probability: 0.0
+contrast_change_probability: 0.0
+contrast_strength: 0.0
+brightness_change_probability: 0.0
+brightness_strength: 0.0
+cutout_probability: 0.0
+cutout_min_fraction: 0.25
+cutout_max_fraction: 0.30
+random_crop_probability: 0.0
+random_crop_scale: [1.0, 1.0]
