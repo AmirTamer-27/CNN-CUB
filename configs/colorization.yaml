@@ -9,7 +9,7 @@ image_size: 320
 validation_fraction: 0.2
 seed: 42
 batch_size: 32
-epochs: 30
+epochs: 80
 
 learning_rate: 0.001
 weight_decay: 0.0001
