@@ -15,6 +15,10 @@ decoder_learning_rate: 0.001
 encoder_learning_rate: 0.00008
 weight_decay: 0.0001
 trainable_encoder_blocks:
+  - block1
+  - block2
+  - block3
+  - block4
   - block5
   - block6
 adapt_trainable_batch_norm: true
