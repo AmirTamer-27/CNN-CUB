@@ -1,4 +1,4 @@
-run_name: colorization_unet_partial_block5_block6
+run_name: colorization_unet_complete
 model: bird_cnn_delayed_pooling
 num_classes: 200
 dropout: 0.3
