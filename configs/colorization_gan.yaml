@@ -18,7 +18,7 @@ weight_decay: 0.0001
 trainable_encoder_blocks: []
 adapt_trainable_batch_norm: false
 lambda_mae: 1.0
-lambda_adversarial: 0.01
+lambda_adversarial: 0.1
 checkpoint_path: outputs/checkpoints/colorization_gan_generator_best.pth
 discriminator_checkpoint_path: outputs/checkpoints/colorization_gan_discriminator_best.pth
 early_stopping_patience: 5

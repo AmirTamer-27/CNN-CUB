@@ -31,14 +31,17 @@ def train_one_epoch(generator, discriminator, loader, generator_optimizer,
         target = batch["image"].to(device, non_blocking=device.type == "cuda")
         grayscale = rgb_to_grayscale(target, num_output_channels=3)
         generated = generator(grayscale)
+        mixed_grayscale = torch.cat((grayscale, grayscale), dim=0)
 
-        # Update the discriminator using real pairs and detached generated pairs.
+        # Give BatchNorm real and fake pairs in the same forward pass.
         discriminator.train()
         for parameter in discriminator.parameters():
             parameter.requires_grad_(True)
         discriminator_optimizer.zero_grad()
-        real_logits = discriminator(grayscale, target)
-        fake_logits = discriminator(grayscale, generated.detach())
+        mixed_colors = torch.cat((target, generated.detach()), dim=0)
+        real_logits, fake_logits = discriminator(
+            mixed_grayscale, mixed_colors
+        ).chunk(2, dim=0)
         discriminator_loss = 0.5 * (
             bce(real_logits, torch.ones_like(real_logits))
             + bce(fake_logits, torch.zeros_like(fake_logits))
@@ -46,12 +49,12 @@ def train_one_epoch(generator, discriminator, loader, generator_optimizer,
         discriminator_loss.backward()
         discriminator_optimizer.step()
 
-        # Keep discriminator weights and BatchNorm statistics fixed for G's update.
-        discriminator.eval()
+        # Freeze only discriminator weights; keep BatchNorm updating on mixed pairs.
         for parameter in discriminator.parameters():
             parameter.requires_grad_(False)
         generator_optimizer.zero_grad()
-        fake_logits = discriminator(grayscale, generated)
+        mixed_colors = torch.cat((target, generated), dim=0)
+        _, fake_logits = discriminator(mixed_grayscale, mixed_colors).chunk(2, dim=0)
         adversarial_loss = bce(fake_logits, torch.ones_like(fake_logits))
         mae = mae_loss(generated, target)
         generator_loss = lambda_mae * mae + lambda_adversarial * adversarial_loss
