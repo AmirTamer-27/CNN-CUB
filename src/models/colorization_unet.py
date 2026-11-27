@@ -115,7 +115,7 @@ class BirdColorizationUNet(nn.Module):
         x6 = self.encoder.block6(x5)   # [B, 512, H/32,  W/32]
         return x1, x2, x3, x4, x5, x6
 
-    def forward(self, grayscale):
+    def decode(self, grayscale):
         x1, x2, x3, x4, x5, x6 = self.encode(grayscale)
 
         d5 = self.decoder5(x6, x5)
@@ -124,5 +124,20 @@ class BirdColorizationUNet(nn.Module):
         d2 = self.decoder2(d3, x2)
         d1 = self.decoder1(d2, x1)
 
+        return d1
+
+    def forward(self, grayscale):
         # RGB targets are expected to be normalized to [0, 1].
-        return torch.sigmoid(self.output_layer(d1))
+        return torch.sigmoid(self.output_layer(self.decode(grayscale)))
+
+
+class BirdLabRegressionUNet(BirdColorizationUNet):
+    """Predict normalized Lab a/b values from the L channel."""
+
+    def __init__(self, encoder=None, trainable_encoder_blocks=None,
+                 adapt_trainable_batch_norm=False):
+        super().__init__(encoder, trainable_encoder_blocks, adapt_trainable_batch_norm)
+        self.output_layer = nn.Conv2d(16, 2, kernel_size=1)
+
+    def forward(self, lightness):
+        return torch.tanh(self.output_layer(self.decode(lightness)))

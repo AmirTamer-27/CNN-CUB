@@ -1,4 +1,4 @@
-"""Train the U-Net colorizer using a Phase 1 encoder from MLflow."""
+"""Train RGB or Lab-regression U-Net using a Phase 1 encoder from MLflow."""
 
 import argparse
 import math
@@ -14,10 +14,11 @@ import yaml
 from src.data.dataset import make_loaders
 from src.evaluation.test_evaluation import TRACKING_URI, download_run_weights
 from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
-from src.models.colorization_unet import BirdColorizationUNet
+from src.models.colorization_unet import BirdColorizationUNet, BirdLabRegressionUNet
+from src.training.colorization.lab_colors import lab_ab_to_rgb, prepare_lab
 
 
-def train_one_epoch(model, loader, criterion, optimizer, device):
+def train_one_epoch(model, loader, criterion, optimizer, device, color_space="rgb"):
     model.train()
     total_mae = 0.0
     total_images = 0
@@ -26,11 +27,15 @@ def train_one_epoch(model, loader, criterion, optimizer, device):
         target_rgb = batch["image"].to(
             device, non_blocking=device.type == "cuda"
         )
-        grayscale = rgb_to_grayscale(target_rgb, num_output_channels=3)
+        if color_space == "lab":
+            encoder_input, _, target = prepare_lab(target_rgb)
+        else:
+            encoder_input = rgb_to_grayscale(target_rgb, num_output_channels=3)
+            target = target_rgb
 
         optimizer.zero_grad()
-        predicted_rgb = model(grayscale)
-        mae = criterion(predicted_rgb, target_rgb)
+        prediction = model(encoder_input)
+        mae = criterion(prediction, target)
         mae.backward()
         optimizer.step()
 
@@ -41,7 +46,7 @@ def train_one_epoch(model, loader, criterion, optimizer, device):
     return total_mae / total_images
 
 
-def validate(model, loader, criterion, device):
+def validate(model, loader, criterion, device, color_space="rgb"):
     model.eval()
     total_mae = 0.0
     total_images = 0
@@ -53,9 +58,14 @@ def validate(model, loader, criterion, device):
             target_rgb = batch["image"].to(
                 device, non_blocking=device.type == "cuda"
             )
-            grayscale = rgb_to_grayscale(target_rgb, num_output_channels=3)
-
-            predicted_rgb = model(grayscale)
+            if color_space == "lab":
+                encoder_input, lightness, target_ab = prepare_lab(target_rgb)
+                predicted_ab = model(encoder_input)
+                predicted_rgb = lab_ab_to_rgb(lightness, predicted_ab)
+                target_rgb = lab_ab_to_rgb(lightness, target_ab)
+            else:
+                grayscale = rgb_to_grayscale(target_rgb, num_output_channels=3)
+                predicted_rgb = model(grayscale)
             mae = criterion(predicted_rgb, target_rgb)
 
             batch_size = target_rgb.size(0)
@@ -105,6 +115,9 @@ def main():
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
+    color_space = config.get("color_space", "rgb")
+    if color_space not in ("rgb", "lab"):
+        raise ValueError("color_space must be 'rgb' or 'lab'.")
 
     torch.manual_seed(config["seed"])
     if torch.cuda.is_available():
@@ -132,7 +145,8 @@ def main():
         torch.load(weights_path, map_location="cpu", weights_only=True)
     )
 
-    model = BirdColorizationUNet(
+    model_class = BirdLabRegressionUNet if color_space == "lab" else BirdColorizationUNet
+    model = model_class(
         encoder=encoder,
         trainable_encoder_blocks=config.get("trainable_encoder_blocks", []),
         adapt_trainable_batch_norm=config.get(
@@ -210,7 +224,8 @@ def main():
             "decoder_learning_rate": decoder_learning_rate,
             "encoder_learning_rate": encoder_learning_rate,
             "weight_decay": config.get("weight_decay", 0.0),
-            "loss": "mae",
+            "loss": "mae_normalized_ab" if color_space == "lab" else "mae",
+            "color_space": color_space,
             "use_bounding_boxes": config["use_bounding_boxes"],
             "seed": config["seed"],
             "early_stopping_patience": early_stopping_patience,
@@ -219,21 +234,21 @@ def main():
 
         for epoch in range(config["epochs"]):
             train_mae = train_one_epoch(
-                model, train_loader, criterion, optimizer, device
+                model, train_loader, criterion, optimizer, device, color_space
             )
             validation_mae, validation_psnr = validate(
-                model, validation_loader, criterion, device
+                model, validation_loader, criterion, device, color_space
             )
 
             print(
                 f"Epoch {epoch + 1}/{config['epochs']} | "
-                f"Train MAE: {train_mae:.4f} | "
-                f"Validation MAE: {validation_mae:.4f} | "
+                f"Train {'ab' if color_space == 'lab' else 'RGB'} MAE: {train_mae:.4f} | "
+                f"Validation RGB MAE: {validation_mae:.4f} | "
                 f"Validation PSNR: {validation_psnr:.2f} dB"
             )
             mlflow.log_metrics(
                 {
-                    "train_mae": train_mae,
+                    "train_ab_mae" if color_space == "lab" else "train_mae": train_mae,
                     "validation_mae": validation_mae,
                     "validation_psnr": validation_psnr,
                 },

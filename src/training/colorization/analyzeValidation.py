@@ -15,7 +15,8 @@ import yaml
 from src.data.dataset import make_loaders
 from src.evaluation.test_evaluation import TRACKING_URI, download_run_weights
 from src.models.bird_cnn_delayed_pooling import BirdCNNDelayedPooling
-from src.models.colorization_unet import BirdColorizationUNet
+from src.models.colorization_unet import BirdColorizationUNet, BirdLabRegressionUNet
+from src.training.colorization.lab_colors import lab_ab_to_rgb, prepare_lab
 
 
 def download_colorization_weights(run_id):
@@ -49,11 +50,13 @@ def download_colorization_weights(run_id):
         dst_path=str(Path("outputs/downloaded_weights") / run_id),
     )
 
-    return checkpoint_path, encoder_run_id, encoder_artifact
+    return checkpoint_path, encoder_run_id, encoder_artifact, run.data.params.get(
+        "color_space", "rgb"
+    )
 
 
 def build_model(config, colorization_run_id, device):
-    checkpoint_path, encoder_run_id, encoder_artifact = download_colorization_weights(
+    checkpoint_path, encoder_run_id, encoder_artifact, color_space = download_colorization_weights(
         colorization_run_id
     )
 
@@ -75,7 +78,10 @@ def build_model(config, colorization_run_id, device):
         torch.load(encoder_path, map_location="cpu", weights_only=True)
     )
 
-    model = BirdColorizationUNet(
+    if color_space not in ("rgb", "lab"):
+        raise ValueError(f"Unsupported color space: {color_space}")
+    model_class = BirdLabRegressionUNet if color_space == "lab" else BirdColorizationUNet
+    model = model_class(
         encoder=encoder,
         trainable_encoder_blocks=[],
         adapt_trainable_batch_norm=False,
@@ -119,8 +125,13 @@ def collect_random_samples(model, loader, device, sample_count, seed):
                 device,
                 non_blocking=device.type == "cuda",
             )
-            grayscale = rgb_to_grayscale(target_rgb, num_output_channels=3)
-            predicted_rgb = model(grayscale)
+            if isinstance(model, BirdLabRegressionUNet):
+                encoder_input, lightness, target_ab = prepare_lab(target_rgb)
+                predicted_rgb = lab_ab_to_rgb(lightness, model(encoder_input))
+                target_rgb = lab_ab_to_rgb(lightness, target_ab)
+            else:
+                grayscale = rgb_to_grayscale(target_rgb, num_output_channels=3)
+                predicted_rgb = model(grayscale)
             image_mae = torch.abs(predicted_rgb - target_rgb).mean(
                 dim=(1, 2, 3)
             )

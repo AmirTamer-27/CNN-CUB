@@ -24,7 +24,7 @@ from src.training.colorization_lab.colors import (
 
 
 def build_model(config, run_id, device):
-    checkpoint_path, encoder_run_id, encoder_artifact = download_colorization_weights(
+    checkpoint_path, encoder_run_id, encoder_artifact, _ = download_colorization_weights(
         run_id
     )
     source_config, encoder_path, _, _ = download_run_weights(
